@@ -1,0 +1,267 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--text-muted);
+  --color-primary: #2F80F9;
+  --color-secondary: #08BD7E;
+
+  --animate-marquee: marquee 35s linear infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-100%); }
+  }
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('https://www.unboundyou.com/_next/static/media/ba9851c3c22cd980-s.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ============================
+   LIGHT MODE TOKENS (default)
+   ============================ */
+:root {
+  --bg-base:         #F4F6FB;
+  --bg-panel:        #FFFFFF;
+  --bg-elevated:     #FFFFFF;
+  --bg-hover:        #F1F5FF;
+  --bg-input:        #FFFFFF;
+
+  --border-base:     #E5EAF3;
+  --border-strong:   #CBD5E1;
+
+  --text-primary:    #0F1729;
+  --text-secondary:  #374151;
+  --text-muted:      #6B7280;
+  --text-faint:      #94A3B8;
+
+  --brand-blue:      #2F80F9;
+  --brand-green:     #08BD7E;
+
+  --sidebar-bg:      #0B1120;
+  --sidebar-border:  rgba(51,65,85,0.5);
+
+  --scrollbar-color: #2F80F9;
+  --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ============================
+   DARK MODE TOKENS
+   ============================ */
+html.dark {
+  --bg-base:         #0D1117;
+  --bg-panel:        #161B26;
+  --bg-elevated:     #1E2535;
+  --bg-hover:        #1E2A3F;
+  --bg-input:        #1A2030;
+
+  --border-base:     #2A3547;
+  --border-strong:   #374357;
+
+  --text-primary:    #E8EDF5;
+  --text-secondary:  #BCC8D8;
+  --text-muted:      #7A8FAD;
+  --text-faint:      #4A5568;
+
+  --brand-blue:      #3D8EF7;
+  --brand-green:     #0ECFA4;
+
+  --sidebar-bg:      #080D16;
+  --sidebar-border:  rgba(30,37,53,0.8);
+
+  --scrollbar-color: #3D8EF7;
+}
+
+@layer base {
+  html {
+    font-size: 15px;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: var(--font-inter);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-inter);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-color);
+    border-radius: 3px;
+  }
+
+  ::selection {
+    background: var(--brand-blue);
+    color: white;
+  }
+}
+
+.inter { font-family: var(--font-inter); }
+.perspective-1000 { perspective: 1000px; }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Smooth theme transitions across all elements */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Exempt animations from transition override */
+.animate-spin, .animate-pulse, .animate-bounce, .animate-ping {
+  transition: none !important;
+}
+
+/* ============================
+   DARK MODE GLOBAL OVERRIDES
+   Covers hardcoded Tailwind classes used throughout components
+   ============================ */
+html.dark .bg-white {
+  background-color: var(--bg-panel) !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-slate-50 {
+  background-color: var(--bg-elevated) !important;
+}
+
+html.dark .bg-gray-100,
+html.dark .bg-slate-100 {
+  background-color: var(--bg-elevated) !important;
+}
+
+html.dark .bg-gray-200,
+html.dark .bg-slate-200 {
+  background-color: #2A3547 !important;
+}
+
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-slate-100,
+html.dark .border-slate-200 {
+  border-color: var(--border-base) !important;
+}
+
+html.dark .border-gray-300,
+html.dark .border-slate-300 {
+  border-color: var(--border-strong) !important;
+}
+
+html.dark .text-gray-900,
+html.dark .text-slate-900 {
+  color: var(--text-primary) !important;
+}
+
+html.dark .text-gray-800,
+html.dark .text-slate-800 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-slate-700 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-gray-600,
+html.dark .text-slate-600 {
+  color: var(--text-muted) !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+html.dark .text-gray-400,
+html.dark .text-slate-400 {
+  color: var(--text-faint) !important;
+}
+
+html.dark .divide-gray-50,
+html.dark .divide-gray-100,
+html.dark .divide-slate-100 {
+  --tw-divide-opacity: 1;
+  border-color: var(--border-base) !important;
+}
+
+/* Inputs & Textareas */
+html.dark input[type="text"],
+html.dark input[type="email"],
+html.dark input[type="date"],
+html.dark input[type="time"],
+html.dark input[type="datetime-local"],
+html.dark textarea,
+html.dark select {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-base) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-faint) !important;
+}
+
+
+/* Hover states in dark mode are handled via the base bg-white / bg-gray-50 overrides above */
+
+
+/* Shadow softening in dark mode */
+html.dark .shadow-sm {
+  --tw-shadow: 0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.4);
+}
+html.dark .shadow-md {
+  --tw-shadow: 0 4px 12px -1px rgba(0,0,0,0.5), 0 2px 8px -2px rgba(0,0,0,0.4);
+}
+html.dark .shadow-2xl {
+  --tw-shadow: 0 25px 50px -12px rgba(0,0,0,0.7);
+}
+
+/* Ring/badge white backgrounds */
+html.dark .ring-white,
+html.dark .ring-2.ring-white {
+  --tw-ring-color: var(--bg-panel);
+}
+
+/* Green/red accent tints adjust for dark mode */
+html.dark .bg-green-50 { background-color: rgba(14,207,164,0.08) !important; }
+html.dark .bg-red-50   { background-color: rgba(239,68,68,0.08) !important; }
+html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.08) !important; }
+html.dark .bg-blue-50  { background-color: rgba(59,130,246,0.08) !important; }
+html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.08) !important; }
+html.dark .bg-orange-50 { background-color: rgba(249,115,22,0.08) !important; }
+
+html.dark .border-green-100  { border-color: rgba(14,207,164,0.2) !important; }
+html.dark .border-red-100,
+html.dark .border-red-200    { border-color: rgba(239,68,68,0.25) !important; }
+html.dark .border-amber-100,
+html.dark .border-amber-200  { border-color: rgba(245,158,11,0.25) !important; }
+html.dark .border-blue-100   { border-color: rgba(59,130,246,0.2) !important; }
+
