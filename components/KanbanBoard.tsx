@@ -6,10 +6,11 @@ import {
   Plus, 
   CheckSquare, 
   Calendar, 
-  MoreVertical
+  MoreVertical,
+  Loader2
+} from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { CustomSelect } from '@/components/CustomSelect';
-import { Loader2 } from 'lucide-react';
 
 const STAGES: Ticket['stage'][] = [
   'New Leads', 
