@@ -1,30 +1,34 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useStore, Ticket, Lead } from '@/lib/useStore';
 import { CustomSelect } from '@/components/CustomSelect';
+import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 import { 
   PieChart, 
   Filter, 
   Ticket as TicketIcon,
   ChevronRight,
-  Clock
+  Clock,
+  Loader2
 } from 'lucide-react';
 
+const supabase = createClient();
+
 export default function TicketsDashboard() {
-  const { tickets, leads, users, setSelectedTicketId } = useStore();
+  const { users, setSelectedTicketId, ticketTypes } = useStore();
   
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [stageFilter, setStageFilter] = useState<string>('All Stages');
 
-  const ticketTypes = [
-    'Scheduling', 
-    'Rescheduling', 
-    'Admission Inquiry', 
-    'Payment Issue', 
-    'e-book related problem', 
-    'demo booking problem'
-  ];
+  // Server-side state
+  const [typeVolumes, setTypeVolumes] = useState<Record<string, number>>({});
+  const [filteredTickets, setFilteredTickets] = useState<Ticket[]>([]);
+  const [leadsCache, setLeadsCache] = useState<Record<string, Lead>>({});
+  const [isLoadingList, setIsLoadingList] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   const stages = [
     'New Leads', 
@@ -46,26 +50,82 @@ export default function TicketsDashboard() {
   };
 
   const getLeadInfo = (leadId: string): Lead | undefined => {
-    return leads.find(l => l.id === leadId);
+    return leadsCache[leadId];
   };
 
-  // 1. Calculate Analytics for Volume by Ticket Type (Ignoring stage filter for overall volume)
-  const typeVolumes = useMemo(() => {
-    const volumes: Record<string, number> = {};
-    ticketTypes.forEach(type => {
-      volumes[type] = tickets.filter(t => t.ticket_type === type).length;
-    });
-    return volumes;
-  }, [tickets]);
+  // Fetch Analytics from RPC
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      const { data, error } = await supabase.rpc('get_ticket_volume_by_type');
+      if (error) {
+        toast.error('Failed to load ticket analytics');
+        return;
+      }
+      
+      if (data) {
+        const volumes: Record<string, number> = {};
+        data.forEach((row: any) => {
+          volumes[row.ticket_type] = Number(row.count);
+        });
+        setTypeVolumes(volumes);
+      }
+    };
+    fetchAnalytics();
+  }, []);
 
-  // 2. Filter Tickets for the List View
-  const filteredTickets = useMemo(() => {
-    return tickets.filter(t => {
-      const matchType = typeFilter === 'All' || t.ticket_type === typeFilter;
-      const matchStage = stageFilter === 'All Stages' || t.stage === stageFilter;
-      return matchType && matchStage;
-    });
-  }, [tickets, typeFilter, stageFilter]);
+  // Fetch Paginated Filtered Tickets
+  const fetchTickets = useCallback(async (isLoadMore = false) => {
+    setIsLoadingList(true);
+    
+    const start = isLoadMore ? (page + 1) * 20 : 0;
+    const end = start + 19;
+
+    try {
+      let query = supabase.from('tickets').select('*').order('created_at', { ascending: false }).range(start, end);
+      
+      if (typeFilter !== 'All') {
+        query = query.eq('ticket_type', typeFilter);
+      }
+      if (stageFilter !== 'All Stages') {
+        query = query.eq('stage', stageFilter);
+      }
+
+      const { data: ticketsData, error } = await query;
+      
+      if (error) throw error;
+
+      if (ticketsData) {
+        // Fetch missing leads
+        const missingLeadIds = [...new Set(ticketsData.map(t => t.lead_id))].filter(id => !leadsCache[id]);
+        if (missingLeadIds.length > 0) {
+          const { data: leadsData } = await supabase.from('leads').select('*').in('id', missingLeadIds);
+          if (leadsData) {
+            const newCache = { ...leadsCache };
+            leadsData.forEach(l => { newCache[l.id] = l as Lead; });
+            setLeadsCache(newCache);
+          }
+        }
+
+        if (isLoadMore) {
+          setFilteredTickets(prev => [...prev, ...ticketsData as Ticket[]]);
+          setPage(prev => prev + 1);
+        } else {
+          setFilteredTickets(ticketsData as Ticket[]);
+          setPage(0);
+        }
+        
+        setHasMore(ticketsData.length === 20);
+      }
+    } catch (e: any) {
+      toast.error(`Error fetching list: ${e.message}`);
+    } finally {
+      setIsLoadingList(false);
+    }
+  }, [typeFilter, stageFilter, leadsCache, page]);
+
+  useEffect(() => {
+    fetchTickets(false);
+  }, [typeFilter, stageFilter]);
 
   const getPriorityColor = (level: Ticket['priority_level']) => {
     switch (level) {
@@ -229,6 +289,18 @@ export default function TicketsDashboard() {
           ) : (
             <div className="py-12 text-center text-gray-400 text-sm">
               No tickets found matching the current filters.
+            </div>
+          )}
+          
+          {hasMore && (
+            <div className="py-4 flex justify-center">
+              <button
+                onClick={() => fetchTickets(true)}
+                disabled={isLoadingList}
+                className="px-6 py-2 text-sm font-semibold rounded-full border transition-all hover:bg-[#08BD7E]/5 text-[#08BD7E] border-[#08BD7E]/30 flex items-center gap-2"
+              >
+                {isLoadingList ? <Loader2 size={16} className="animate-spin" /> : 'Load More Tickets'}
+              </button>
             </div>
           )}
         </div>

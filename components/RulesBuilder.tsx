@@ -7,8 +7,9 @@ import { Plus, Trash2, ToggleLeft, ToggleRight, Check } from 'lucide-react';
 import { CustomSelect } from '@/components/CustomSelect';
 
 export default function RulesBuilder() {
-  const { rules, addRule, updateRule, deleteRule } = useStore();
+  const { rules, addRule, updateRule, deleteRule, ticketTypes, addTicketType, removeTicketType } = useStore();
   const [isAdding, setIsAdding] = useState(false);
+  const [newTicketType, setNewTicketType] = useState('');
 
   // New Rule Form State
   const [name, setName] = useState('');
@@ -49,8 +50,6 @@ export default function RulesBuilder() {
       case 'not_equals': return 'is not equal to';
       case 'greater_than': return '>';
       case 'less_than': return '<';
-      case 'contains': return 'contains';
-      case 'is_in': return 'is in';
       default: return op;
     }
   };
@@ -68,6 +67,59 @@ export default function RulesBuilder() {
 
   return (
     <div className="space-y-6">
+      
+      {/* Custom Ticket Types Panel */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+        <div>
+          <h3 className="text-lg font-bold text-gray-900">Custom Ticket Types</h3>
+          <p className="text-xs text-gray-400">Manage the available problem types for tickets across the application.</p>
+        </div>
+        
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newTicketType.trim() && !ticketTypes.includes(newTicketType.trim())) {
+              addTicketType(newTicketType.trim());
+              setNewTicketType('');
+            }
+          }}
+          className="flex gap-3"
+        >
+          <input 
+            type="text" 
+            value={newTicketType}
+            onChange={(e) => setNewTicketType(e.target.value)}
+            placeholder="e.g. Server Issue" 
+            className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+          />
+          <button 
+            type="submit"
+            disabled={!newTicketType.trim()}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white hover:bg-primary/95 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-xs font-semibold shadow-sm transition-all"
+          >
+            <Plus size={14} />
+            <span>Add Type</span>
+          </button>
+        </form>
+
+        <div className="flex flex-wrap gap-2 pt-2">
+          {ticketTypes.map(type => (
+            <div key={type} className="flex items-center gap-2 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg">
+              <span className="text-sm font-semibold text-slate-700">{type}</span>
+              <button 
+                onClick={() => removeTicketType(type)}
+                className="text-slate-400 hover:text-red-500 transition-colors"
+                title="Remove type"
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+          {ticketTypes.length === 0 && (
+            <p className="text-sm text-gray-400 italic">No custom ticket types defined.</p>
+          )}
+        </div>
+      </div>
       
       {/* Rule Builder Form Panel */}
       <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
@@ -139,8 +191,7 @@ export default function RulesBuilder() {
                   className="rounded-xl px-3 bg-white"
                   options={(targetField === 'stage' || targetField === 'ticket_type') ? [
                     { label: "Equals", value: "equals" },
-                    { label: "Does Not Equal", value: "not_equals" },
-                    { label: "Contains", value: "contains" }
+                    { label: "Does Not Equal", value: "not_equals" }
                   ] : [
                     { label: "Is Greater Than (>)", value: "greater_than" },
                     { label: "Is Less Than (<)", value: "less_than" },
@@ -152,14 +203,45 @@ export default function RulesBuilder() {
               {/* Value */}
               <div className="space-y-1">
                 <label className="text-xs text-gray-500 font-semibold">Matching Value</label>
-                <input 
-                  type="text" 
-                  value={valueInput}
-                  onChange={(e) => setValueInput(e.target.value)}
-                  placeholder={targetField === 'estimated_value' ? '50000' : 'e.g. Payment Pending'} 
-                  className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
-                  required
-                />
+                {targetField === 'ticket_type' ? (
+                  <CustomSelect 
+                    value={valueInput}
+                    onChange={(val) => setValueInput(val)}
+                    className="rounded-xl px-3 bg-white"
+                    options={[
+                      { label: "Select Ticket Type...", value: "" },
+                      ...ticketTypes.map(t => ({ label: t, value: t }))
+                    ]}
+                  />
+                ) : targetField === 'stage' ? (
+                  <CustomSelect 
+                    value={valueInput}
+                    onChange={(val) => setValueInput(val)}
+                    className="rounded-xl px-3 bg-white"
+                    options={[
+                      { label: "Select Stage...", value: "" },
+                      { label: "New Leads", value: "New Leads" },
+                      { label: "Contacted", value: "Contacted" },
+                      { label: "Session Scheduled", value: "Session Scheduled" },
+                      { label: "Session Completed", value: "Session Completed" },
+                      { label: "Follow Up", value: "Follow Up" },
+                      { label: "Interested", value: "Interested" },
+                      { label: "Payment Pending", value: "Payment Pending" },
+                      { label: "Converted", value: "Converted" },
+                      { label: "Closed", value: "Closed" },
+                      { label: "Dropped", value: "Dropped" }
+                    ]}
+                  />
+                ) : (
+                  <input 
+                    type="text" 
+                    value={valueInput}
+                    onChange={(e) => setValueInput(e.target.value)}
+                    placeholder={targetField === 'estimated_value' ? '50000' : 'e.g. 5'} 
+                    className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                    required
+                  />
+                )}
               </div>
             </div>
 

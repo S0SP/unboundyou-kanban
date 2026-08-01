@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { PriorityRule, calculatePriority, EvaluationContext } from './priorityEngine';
 import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
 
 const supabase = createClient();
 
@@ -95,8 +96,13 @@ interface AppState {
   rules: PriorityRule[];
   activities: Activity[];
   notes: Note[];
+  ticketTypes: string[];
   currentUser: User | null;
   isLoading: boolean;
+  hasMoreLeads: boolean;
+  hasMoreTickets: boolean;
+  leadsPage: number;
+  ticketsPage: number;
   
   // UI State
   activeTab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules';
@@ -112,7 +118,10 @@ interface AppState {
   isDarkMode: boolean;
   
   // Actions
+  setupSubscriptions: () => void;
   fetchData: () => Promise<void>;
+  loadMoreLeads: () => Promise<void>;
+  loadMoreTickets: () => Promise<void>;
   setActiveTab: (tab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules') => void;
   setSelectedTicketId: (id: string | null) => void;
   setCreateLeadOpen: (open: boolean) => void;
@@ -144,6 +153,9 @@ interface AppState {
   
   addNote: (leadId: string, content: string) => Promise<void>;
   addActivity: (activity: Omit<Activity, 'id' | 'created_at' | 'created_by'>) => Promise<void>;
+  
+  addTicketType: (name: string) => Promise<void>;
+  removeTicketType: (name: string) => Promise<void>;
   
   recalculateAllPriorities: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
@@ -224,8 +236,13 @@ export const useStore = create<AppState>((set, get) => ({
   rules: [],
   activities: [],
   notes: [],
+  ticketTypes: [],
   currentUser: null,
   isLoading: true,
+  hasMoreLeads: true,
+  hasMoreTickets: true,
+  leadsPage: 0,
+  ticketsPage: 0,
 
   // UI State Defaults
   activeTab: 'dashboard',
@@ -334,8 +351,46 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  setupSubscriptions: () => {
+    supabase.channel('public:leads')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          set((state) => ({ leads: [payload.new as Lead, ...state.leads] }));
+        } else if (payload.eventType === 'UPDATE') {
+          set((state) => ({ leads: state.leads.map(l => l.id === payload.new.id ? payload.new as Lead : l) }));
+        } else if (payload.eventType === 'DELETE') {
+          set((state) => ({ leads: state.leads.filter(l => l.id !== payload.old.id) }));
+        }
+      })
+      .subscribe();
+
+    supabase.channel('public:tickets')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          set((state) => ({ tickets: [payload.new as Ticket, ...state.tickets] }));
+        } else if (payload.eventType === 'UPDATE') {
+          set((state) => ({ tickets: state.tickets.map(t => t.id === payload.new.id ? payload.new as Ticket : t) }));
+        } else if (payload.eventType === 'DELETE') {
+          set((state) => ({ tickets: state.tickets.filter(t => t.id !== payload.old.id) }));
+        }
+      })
+      .subscribe();
+
+    supabase.channel('public:tasks')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          set((state) => ({ tasks: [payload.new as Task, ...state.tasks] }));
+        } else if (payload.eventType === 'UPDATE') {
+          set((state) => ({ tasks: state.tasks.map(t => t.id === payload.new.id ? payload.new as Task : t) }));
+        } else if (payload.eventType === 'DELETE') {
+          set((state) => ({ tasks: state.tasks.filter(t => t.id !== payload.old.id) }));
+        }
+      })
+      .subscribe();
+  },
+
   fetchData: async () => {
-    set({ isLoading: true });
+    set({ isLoading: true, leadsPage: 0, ticketsPage: 0 });
     try {
       const { data: authData } = await supabase.auth.getUser();
       if (!authData.user) {
@@ -343,24 +398,29 @@ export const useStore = create<AppState>((set, get) => ({
         return;
       }
 
-      // Fetch all tables
-      const [
-        { data: users },
-        { data: leads },
-        { data: tickets },
-        { data: tasks },
-        { data: rules },
-        { data: activities },
-        { data: notes }
-      ] = await Promise.all([
+      // Fetch all tables with limits for large ones
+      const results = await Promise.all([
         supabase.from('users').select('*'),
-        supabase.from('leads').select('*').order('created_at', { ascending: false }),
-        supabase.from('tickets').select('*').order('created_at', { ascending: false }),
+        supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }).range(0, 49),
+        supabase.from('tickets').select('*').not('stage', 'in', '("Closed","Dropped","Converted")').order('created_at', { ascending: false }).range(0, 49),
         supabase.from('tasks').select('*').order('created_at', { ascending: false }),
         supabase.from('priority_rules').select('*').order('created_at', { ascending: false }),
         supabase.from('activities').select('*').order('created_at', { ascending: false }),
-        supabase.from('notes').select('*').order('created_at', { ascending: false })
+        supabase.from('notes').select('*').order('created_at', { ascending: true }),
+        supabase.from('ticket_types').select('name').order('created_at', { ascending: true })
       ]);
+
+      const users = results[0].data;
+      const leads = results[1].data;
+      const tickets = results[2].data;
+      const tasks = results[3].data;
+      const rules = results[4].data;
+      const activities = results[5].data;
+      const notes = results[6].data || [];
+      const ticketTypesRes = results[7];
+      const fetchedTicketTypes = ticketTypesRes && !ticketTypesRes.error 
+          ? ticketTypesRes.data.map((row: any) => row.name) 
+          : ['Scheduling', 'Rescheduling', 'Admission Inquiry', 'Payment Issue', 'e-book related problem', 'demo booking problem'];
 
       let currentUser = users?.find(u => u.id === authData.user.id) || null;
       
@@ -421,208 +481,355 @@ export const useStore = create<AppState>((set, get) => ({
         tasks: tasks || [],
         rules: rules || [],
         activities: filteredActivities,
-        notes: notes || [],
+        notes: notes,
+        ticketTypes: fetchedTicketTypes,
         currentUser,
         unreadActivities: unreadCount,
+        hasMoreLeads: (leads || []).length === 50,
+        hasMoreTickets: (tickets || []).length === 50,
         isCollapsed: currentUser?.settings?.sidebar_collapsed ?? false,
         isLoading: false
       });
+      get().setupSubscriptions();
     } catch (error) {
+      toast.error('Error fetching initial data');
       console.error('Error fetching data:', error);
       set({ isLoading: false });
     }
   },
 
-  addLead: async (leadData) => {
-    const { data, error } = await supabase.from('leads').insert([leadData]).select().single();
-    if (error) {
-      console.error('Add lead error:', error);
-      return;
-    }
-    set({ leads: [data, ...get().leads] });
+  loadMoreLeads: async () => {
+    const { leadsPage, leads } = get();
+    const nextPage = leadsPage + 1;
+    const start = nextPage * 50;
+    const end = start + 49;
     
-    // Log Activity
-    await get().addActivity({
-      lead_id: data.id,
-      type: 'ticket_created',
-      message: `Lead manually added for parent ${data.parent_name} (Student: ${data.student_name})`
-    });
+    try {
+      const { data, error } = await supabase.from('leads')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .range(start, end);
+        
+      if (error) throw error;
+      
+      if (data) {
+        set({ 
+          leads: [...leads, ...data],
+          leadsPage: nextPage,
+          hasMoreLeads: data.length === 50
+        });
+      }
+    } catch (e: any) {
+      toast.error(`Failed to load more leads: ${e.message}`);
+    }
+  },
 
-    // Automatically create a Lead Ticket for the Kanban board
-    await get().addTicket({
-      lead_id: data.id,
-      title: 'Initial Lead Inquiry',
-      description: 'System generated ticket for new lead',
-      ticket_type: 'Lead',
-      stage: 'New Leads',
-      due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      assigned_to: leadData.assigned_to,
-    });
+  loadMoreTickets: async () => {
+    const { ticketsPage, tickets } = get();
+    const nextPage = ticketsPage + 1;
+    const start = nextPage * 50;
+    const end = start + 49;
+    
+    try {
+      const { data, error } = await supabase.from('tickets')
+        .select('*')
+        .not('stage', 'in', '("Closed","Dropped","Converted")')
+        .order('created_at', { ascending: false })
+        .range(start, end);
+        
+      if (error) throw error;
+      
+      if (data) {
+        set({ 
+          tickets: [...tickets, ...data],
+          ticketsPage: nextPage,
+          hasMoreTickets: data.length === 50
+        });
+      }
+    } catch (e: any) {
+      toast.error(`Failed to load more tickets: ${e.message}`);
+    }
+  },
+
+  addLead: async (leadData) => {
+    try {
+      const { data, error } = await supabase.from('leads').insert([leadData]).select().single();
+      if (error) {
+        toast.error(`Failed to add lead: ${error.message}`);
+        console.error('Add lead error:', error);
+        return;
+      }
+      set({ leads: [data, ...get().leads] });
+      
+      // Log Activity
+      await get().addActivity({
+        lead_id: data.id,
+        type: 'ticket_created',
+        message: `Lead manually added for parent ${data.parent_name} (Student: ${data.student_name})`
+      });
+
+      // Automatically create a Lead Ticket for the Kanban board
+      await get().addTicket({
+        lead_id: data.id,
+        title: 'Initial Lead Inquiry',
+        description: 'System generated ticket for new lead',
+        ticket_type: 'Lead',
+        stage: 'New Leads',
+        due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        assigned_to: leadData.assigned_to,
+      });
+
+      toast.success('Lead added successfully!');
+    } catch (e) {
+      toast.error('An unexpected error occurred while adding lead.');
+    }
   },
 
   updateLead: async (id, updates) => {
-    const { data, error } = await supabase.from('leads').update(updates).eq('id', id).select().single();
-    if (error) return;
-    
-    set({ leads: get().leads.map(l => l.id === id ? data : l) });
-    get().recalculateAllPriorities();
+    try {
+      const { data, error } = await supabase.from('leads').update(updates).eq('id', id).select().single();
+      if (error) {
+        toast.error(`Failed to update lead: ${error.message}`);
+        return;
+      }
+      
+      set({ leads: get().leads.map(l => l.id === id ? data : l) });
+      get().recalculateAllPriorities();
+      toast.success('Lead updated successfully!');
+    } catch (e) {
+      toast.error('An unexpected error occurred while updating lead.');
+    }
   },
 
   addTicket: async (ticketData) => {
-    const tempTicket = { ...ticketData, priority_level: 'Medium' as const, priority_score: 0 };
-    const lead = get().leads.find(l => l.id === ticketData.lead_id);
-    const { score, level } = evaluatePriorityHelper(tempTicket as unknown as Ticket, lead, get().rules);
-    
-    const newTicket = { ...ticketData, priority_level: level, priority_score: score };
-    
-    const { data, error } = await supabase.from('tickets').insert([newTicket]).select().single();
-    if (error) {
-      console.error('Add ticket error:', error);
-      return;
+    try {
+      const tempTicket = { ...ticketData, priority_level: 'Medium' as const, priority_score: 0 };
+      const lead = get().leads.find(l => l.id === ticketData.lead_id);
+      const { score, level } = evaluatePriorityHelper(tempTicket as unknown as Ticket, lead, get().rules);
+      
+      const newTicket = { ...ticketData, priority_level: level, priority_score: score };
+      
+      const { data, error } = await supabase.from('tickets').insert([newTicket]).select().single();
+      if (error) {
+        toast.error(`Failed to create ticket: ${error.message}`);
+        console.error('Add ticket error:', error);
+        return;
+      }
+
+      set({ tickets: [data, ...get().tickets] });
+
+      // Generate initial tasks
+      const stageTasks = generateTasksForStage(data.id, data.stage);
+      for (const task of stageTasks) {
+        await get().addTask(task);
+      }
+
+      // Log Activity
+      await get().addActivity({
+        ticket_id: data.id,
+        lead_id: data.lead_id,
+        type: 'ticket_created',
+        message: `Ticket "${data.title}" created in stage ${data.stage}`
+      });
+      
+      toast.success('Ticket created successfully!');
+    } catch (e) {
+      toast.error('An unexpected error occurred while creating the ticket.');
     }
-
-    set({ tickets: [data, ...get().tickets] });
-
-    // Generate initial tasks
-    const stageTasks = generateTasksForStage(data.id, data.stage);
-    for (const task of stageTasks) {
-      await get().addTask(task);
-    }
-
-    // Log Activity
-    await get().addActivity({
-      ticket_id: data.id,
-      lead_id: data.lead_id,
-      type: 'ticket_created',
-      message: `Ticket "${data.title}" created in stage ${data.stage}`
-    });
   },
 
   updateTicket: async (id, updates) => {
-    const ticket = get().tickets.find(t => t.id === id);
-    if (!ticket) return;
+    try {
+      const ticket = get().tickets.find(t => t.id === id);
+      if (!ticket) return;
 
-    const merged = { ...ticket, ...updates };
-    const lead = get().leads.find(l => l.id === merged.lead_id);
-    const { score, level } = evaluatePriorityHelper(merged as unknown as Ticket, lead, get().rules);
-    
-    const { data, error } = await supabase.from('tickets').update({
-      ...updates,
-      priority_score: score,
-      priority_level: level
-    }).eq('id', id).select().single();
-    
-    if (error) return;
+      const merged = { ...ticket, ...updates };
+      const lead = get().leads.find(l => l.id === merged.lead_id);
+      const { score, level } = evaluatePriorityHelper(merged as unknown as Ticket, lead, get().rules);
+      
+      const { data, error } = await supabase.from('tickets').update({
+        ...updates,
+        priority_score: score,
+        priority_level: level
+      }).eq('id', id).select().single();
+      
+      if (error) {
+        toast.error(`Failed to update ticket: ${error.message}`);
+        return;
+      }
 
-    set({ tickets: get().tickets.map(t => t.id === id ? data : t) });
+      set({ tickets: get().tickets.map(t => t.id === id ? data : t) });
+      toast.success('Ticket updated successfully!');
+    } catch (e) {
+      toast.error('An unexpected error occurred while updating the ticket.');
+    }
   },
 
   moveTicketStage: async (ticketId, newStage) => {
-    const ticket = get().tickets.find(t => t.id === ticketId);
-    if (!ticket || ticket.stage === newStage) return;
-    const oldStage = ticket.stage;
+    try {
+      const ticket = get().tickets.find(t => t.id === ticketId);
+      if (!ticket || ticket.stage === newStage) return;
+      const oldStage = ticket.stage;
 
-    // Optimistic update
-    const merged = { ...ticket, stage: newStage };
-    const lead = get().leads.find(l => l.id === ticket.lead_id);
-    const { score, level } = evaluatePriorityHelper(merged as unknown as Ticket, lead, get().rules);
+      // Optimistic update
+      const merged = { ...ticket, stage: newStage };
+      const lead = get().leads.find(l => l.id === ticket.lead_id);
+      const { score, level } = evaluatePriorityHelper(merged as unknown as Ticket, lead, get().rules);
 
-    set({
-      tickets: get().tickets.map(t => t.id === ticketId ? { ...t, stage: newStage, priority_score: score, priority_level: level } : t)
-    });
+      set({
+        tickets: get().tickets.map(t => t.id === ticketId ? { ...t, stage: newStage, priority_score: score, priority_level: level } : t)
+      });
 
-    const { error } = await supabase.from('tickets').update({ stage: newStage, priority_score: score, priority_level: level }).eq('id', ticketId).select().single();
-    if (error) {
-       // Rollback
-       set({ tickets: get().tickets.map(t => t.id === ticketId ? ticket : t) });
-       return;
+      const { error } = await supabase.from('tickets').update({ stage: newStage, priority_score: score, priority_level: level }).eq('id', ticketId).select().single();
+      if (error) {
+         // Rollback
+         set({ tickets: get().tickets.map(t => t.id === ticketId ? ticket : t) });
+         toast.error(`Failed to move ticket: ${error.message}`);
+         return;
+      }
+
+      const stageTasks = generateTasksForStage(ticketId, newStage);
+      for (const task of stageTasks) {
+        await get().addTask(task);
+      }
+
+      await get().addActivity({
+        ticket_id: ticketId,
+        lead_id: ticket.lead_id,
+        type: 'stage_changed',
+        message: `Stage moved from "${oldStage}" to "${newStage}"`
+      });
+      
+      toast.success(`Ticket moved to ${newStage}`);
+    } catch (e) {
+      toast.error('An unexpected error occurred while moving the ticket.');
     }
-
-    const stageTasks = generateTasksForStage(ticketId, newStage);
-    for (const task of stageTasks) {
-      await get().addTask(task);
-    }
-
-    await get().addActivity({
-      ticket_id: ticketId,
-      lead_id: ticket.lead_id,
-      type: 'stage_changed',
-      message: `Stage moved from "${oldStage}" to "${newStage}"`
-    });
   },
 
   addTask: async (taskData) => {
-    const { data, error } = await supabase.from('tasks').insert([{...taskData, completed: false}]).select().single();
-    if (error) return;
-    set({ tasks: [...get().tasks, data] });
+    try {
+      const { data, error } = await supabase.from('tasks').insert([{...taskData, completed: false}]).select().single();
+      if (error) {
+        toast.error(`Failed to add task: ${error.message}`);
+        return;
+      }
+      set({ tasks: [...get().tasks, data] });
+    } catch (e) {
+      toast.error('An unexpected error occurred while adding task.');
+    }
   },
 
   toggleTask: async (taskId) => {
-    const task = get().tasks.find(t => t.id === taskId);
-    if (!task) return;
-    
-    const newStatus = !task.completed;
-    
-    // Optimistic update
-    set({ tasks: get().tasks.map(t => t.id === taskId ? { ...t, completed: newStatus } : t) });
+    try {
+      const task = get().tasks.find(t => t.id === taskId);
+      if (!task) return;
+      
+      const newStatus = !task.completed;
+      
+      // Optimistic update
+      set({ tasks: get().tasks.map(t => t.id === taskId ? { ...t, completed: newStatus } : t) });
 
-    const { error } = await supabase.from('tasks').update({ completed: newStatus }).eq('id', taskId);
-    if (error) {
-      // rollback
-      set({ tasks: get().tasks.map(t => t.id === taskId ? { ...t, completed: !newStatus } : t) });
-      return;
+      const { error } = await supabase.from('tasks').update({ completed: newStatus }).eq('id', taskId);
+      if (error) {
+        // rollback
+        set({ tasks: get().tasks.map(t => t.id === taskId ? { ...t, completed: !newStatus } : t) });
+        toast.error(`Failed to update task: ${error.message}`);
+        return;
+      }
+
+      await get().addActivity({
+        ticket_id: task.ticket_id,
+        type: 'task_completed',
+        message: `Task checklist item "${task.title}" marked as ${newStatus ? 'completed' : 'incomplete'}`
+      });
+    } catch (e) {
+      toast.error('An unexpected error occurred while toggling task.');
     }
-
-    await get().addActivity({
-      ticket_id: task.ticket_id,
-      type: 'task_completed',
-      message: `Task checklist item "${task.title}" marked as ${newStatus ? 'completed' : 'incomplete'}`
-    });
   },
 
   deleteTask: async (taskId) => {
-    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
-    if (error) return;
-    set({ tasks: get().tasks.filter(t => t.id !== taskId) });
+    try {
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) {
+        toast.error(`Failed to delete task: ${error.message}`);
+        return;
+      }
+      set({ tasks: get().tasks.filter(t => t.id !== taskId) });
+    } catch (e) {
+      toast.error('An unexpected error occurred while deleting task.');
+    }
   },
 
   addRule: async (ruleData) => {
-    const { data, error } = await supabase.from('priority_rules').insert([ruleData]).select().single();
-    if (error) return;
-    set({ rules: [...get().rules, data] });
-    get().recalculateAllPriorities();
+    try {
+      const { data, error } = await supabase.from('priority_rules').insert([ruleData]).select().single();
+      if (error) {
+        toast.error(`Failed to add rule: ${error.message}`);
+        return;
+      }
+      set({ rules: [...get().rules, data] });
+      get().recalculateAllPriorities();
+      toast.success('Priority rule added.');
+    } catch (e) {
+      toast.error('An unexpected error occurred while adding rule.');
+    }
   },
 
   updateRule: async (id, updates) => {
-    const { data, error } = await supabase.from('priority_rules').update(updates).eq('id', id).select().single();
-    if (error) return;
-    set({ rules: get().rules.map(r => r.id === id ? data : r) });
-    get().recalculateAllPriorities();
+    try {
+      const { data, error } = await supabase.from('priority_rules').update(updates).eq('id', id).select().single();
+      if (error) {
+        toast.error(`Failed to update rule: ${error.message}`);
+        return;
+      }
+      set({ rules: get().rules.map(r => r.id === id ? data : r) });
+      get().recalculateAllPriorities();
+      toast.success('Priority rule updated.');
+    } catch (e) {
+      toast.error('An unexpected error occurred while updating rule.');
+    }
   },
 
   deleteRule: async (id) => {
-    const { error } = await supabase.from('priority_rules').delete().eq('id', id);
-    if (error) return;
-    set({ rules: get().rules.filter(r => r.id !== id) });
-    get().recalculateAllPriorities();
+    try {
+      const { error } = await supabase.from('priority_rules').delete().eq('id', id);
+      if (error) {
+        toast.error(`Failed to delete rule: ${error.message}`);
+        return;
+      }
+      set({ rules: get().rules.filter(r => r.id !== id) });
+      get().recalculateAllPriorities();
+      toast.success('Priority rule deleted.');
+    } catch (e) {
+      toast.error('An unexpected error occurred while deleting rule.');
+    }
   },
 
   addNote: async (leadId, content) => {
-    const currentUser = get().currentUser;
-    const { data, error } = await supabase.from('notes').insert([{
-      lead_id: leadId,
-      content,
-      created_by: currentUser?.id
-    }]).select().single();
-    if (error) return;
-    
-    set({ notes: [data, ...get().notes] });
+    try {
+      const currentUser = get().currentUser;
+      const { data, error } = await supabase.from('notes').insert([{
+        lead_id: leadId,
+        content,
+        created_by: currentUser?.id
+      }]).select().single();
+      if (error) {
+        toast.error(`Failed to add note: ${error.message}`);
+        return;
+      }
+      
+      set({ notes: [data, ...get().notes] });
 
-    await get().addActivity({
-      lead_id: leadId,
-      type: 'note_added',
-      message: `Added new note: "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`
-    });
+      await get().addActivity({
+        lead_id: leadId,
+        type: 'note_added',
+        message: `Added new note: "${content.substring(0, 40)}${content.length > 40 ? '...' : ''}"`
+      });
+      toast.success('Note added.');
+    } catch (e) {
+      toast.error('An unexpected error occurred while adding note.');
+    }
   },
 
   addActivity: async (activityData) => {
@@ -655,6 +862,41 @@ export const useStore = create<AppState>((set, get) => ({
     set({ tickets: updatedTickets });
   },
 
+  addTicketType: async (name: string) => {
+    try {
+      const { error } = await supabase
+        .from('ticket_types')
+        .insert([{ name }]);
+
+      if (error) throw error;
+
+      set((state) => ({
+        ticketTypes: [...state.ticketTypes, name]
+      }));
+      toast.success(`Ticket type "${name}" added successfully.`);
+    } catch (error: any) {
+      toast.error(`Error adding ticket type: ${error.message}`);
+    }
+  },
+
+  removeTicketType: async (name: string) => {
+    try {
+      const { error } = await supabase
+        .from('ticket_types')
+        .delete()
+        .eq('name', name);
+
+      if (error) throw error;
+
+      set((state) => ({
+        ticketTypes: state.ticketTypes.filter(t => t !== name)
+      }));
+      toast.success(`Ticket type "${name}" removed successfully.`);
+    } catch (error: any) {
+      toast.error(`Error removing ticket type: ${error.message}`);
+    }
+  },
+
   updateProfile: async (updates) => {
     const { currentUser } = get();
     if (!currentUser) return;
@@ -676,9 +918,9 @@ export const useStore = create<AppState>((set, get) => ({
       set({
         users: users.map(u => u.id === currentUser.id ? { ...u, ...updates } : u)
       });
+      toast.success('Profile updated.');
     } else {
-      console.error("Error updating profile:", error);
-      throw error;
+      toast.error(`Error updating profile: ${error.message}`);
     }
   },
 
@@ -703,9 +945,9 @@ export const useStore = create<AppState>((set, get) => ({
           }
         });
       }
+      toast.success('User data updated.');
     } else {
-      console.error("Error updating user data:", error);
-      throw error;
+      toast.error(`Error updating user data: ${error.message}`);
     }
   },
 

@@ -8,14 +8,15 @@ import { CustomSelect } from '@/components/CustomSelect';
 
 export default function CreateModals() {
   const { 
-    isCreateLeadOpen, 
-    setCreateLeadOpen, 
-    isCreateTicketOpen, 
-    setCreateTicketOpen, 
     users, 
     leads, 
     addLead, 
     addTicket,
+    isCreateLeadOpen, 
+    setCreateLeadOpen, 
+    isCreateTicketOpen, 
+    setCreateTicketOpen, 
+    ticketTypes,
     preselectedLeadId,
     setPreselectedLeadId,
     preselectedTicketStage,
@@ -35,7 +36,7 @@ export default function CreateModals() {
   const [selectedLeadId, setSelectedLeadId] = useState(leads[0]?.id || '');
   const [ticketTitle, setTicketTitle] = useState('');
   const [ticketDescription, setTicketDescription] = useState('');
-  const [ticketType, setTicketType] = useState('Scheduling');
+  const [ticketType, setTicketType] = useState(ticketTypes[0] || 'Scheduling');
   const [ticketStage, setTicketStage] = useState<Ticket['stage']>('New Leads');
   const [ticketAssignee, setTicketAssignee] = useState(users[0]?.id || '');
   const [dueDate, setDueDate] = useState('');
@@ -117,7 +118,7 @@ export default function CreateModals() {
     // Reset & Close
     setTicketTitle('');
     setTicketDescription('');
-    setTicketType('Scheduling');
+    setTicketType(ticketTypes[0] || 'Scheduling');
     setDueDate('');
     setSessionDate('');
     setReminderDate('');
@@ -291,14 +292,7 @@ export default function CreateModals() {
                     value={ticketType}
                     onChange={(val) => setTicketType(val)}
                     className="rounded-xl px-3 bg-white"
-                    options={[
-                      { label: "Scheduling", value: "Scheduling" },
-                      { label: "Rescheduling", value: "Rescheduling" },
-                      { label: "Admission Inquiry", value: "Admission Inquiry" },
-                      { label: "Payment Issue", value: "Payment Issue" },
-                      { label: "e-book related problem", value: "e-book related problem" },
-                      { label: "demo booking problem", value: "demo booking problem" }
-                    ]}
+                    options={ticketTypes.map(t => ({ label: t, value: t }))}
                   />
                 </div>
                 <div className="space-y-1">

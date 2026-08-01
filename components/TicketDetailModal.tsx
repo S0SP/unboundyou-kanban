@@ -29,10 +29,11 @@ export default function TicketDetailModal() {
     activities, 
     users,
     updateTicket, 
+    addActivity, 
     addTask, 
     toggleTask, 
-    deleteTask, 
-    addNote 
+    deleteTask,
+    ticketTypes 
   } = useStore();
 
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -334,15 +335,7 @@ export default function TicketDetailModal() {
                 <CustomSelect 
                   value={ticket.ticket_type}
                   onChange={(val) => updateTicket(ticket.id, { ticket_type: val })}
-                  className="rounded-xl px-3 bg-white"
-                  options={[
-                    { label: "Scheduling", value: "Scheduling" },
-                    { label: "Rescheduling", value: "Rescheduling" },
-                    { label: "Admission Inquiry", value: "Admission Inquiry" },
-                    { label: "Payment Issue", value: "Payment Issue" },
-                    { label: "e-book related problem", value: "e-book related problem" },
-                    { label: "demo booking problem", value: "demo booking problem" }
-                  ]}
+                  options={ticketTypes.map(t => ({ label: t, value: t }))}
                 />
               </div>
 

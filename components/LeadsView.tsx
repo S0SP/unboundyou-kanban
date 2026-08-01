@@ -1,24 +1,64 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useStore, Lead } from '@/lib/useStore';
-import { Search, Phone, Mail, Plus, MessageCircle } from 'lucide-react';
+import { Search, Phone, Mail, Plus, MessageCircle, Loader2 } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+import { toast } from 'sonner';
+import { useDebounce } from 'use-debounce';
+
+const supabase = createClient();
 
 export default function LeadsView() {
-  const { leads, tickets, users, addLead, setCreateLeadOpen, setCreateTicketOpen, setPreselectedLeadId } = useStore();
+  const { tickets, users, setCreateLeadOpen, setCreateTicketOpen, setPreselectedLeadId } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch] = useDebounce(searchQuery, 500);
+
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   const handleCreateTicketForLead = (leadId: string) => {
     setPreselectedLeadId(leadId);
     setCreateTicketOpen(true);
   };
 
-  // Filter leads based on query
-  const filteredLeads = leads.filter(l => 
-    l.parent_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    l.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (l.email && l.email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const fetchLeads = useCallback(async (isLoadMore = false) => {
+    setIsLoading(true);
+    const start = isLoadMore ? (page + 1) * 20 : 0;
+    const end = start + 19;
+
+    try {
+      let query = supabase.from('leads').select('*').eq('status', 'active').order('created_at', { ascending: false }).range(start, end);
+
+      if (debouncedSearch) {
+        query = query.or(`parent_name.ilike.%${debouncedSearch}%,student_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (data) {
+        if (isLoadMore) {
+          setFilteredLeads(prev => [...prev, ...data as Lead[]]);
+          setPage(prev => prev + 1);
+        } else {
+          setFilteredLeads(data as Lead[]);
+          setPage(0);
+        }
+        setHasMore(data.length === 20);
+      }
+    } catch (e: any) {
+      toast.error(`Error loading leads: ${e.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearch, page]);
+
+  useEffect(() => {
+    fetchLeads(false);
+  }, [debouncedSearch]);
 
   const getCounselorName = (userId: string) => {
     return users.find(u => u.id === userId)?.name || 'Unassigned';
@@ -170,6 +210,18 @@ export default function LeadsView() {
               )}
             </tbody>
           </table>
+          
+          {hasMore && (
+            <div className="py-6 flex justify-center border-t border-gray-100">
+              <button
+                onClick={() => fetchLeads(true)}
+                disabled={isLoading}
+                className="px-6 py-2 text-sm font-semibold rounded-full border transition-all hover:bg-primary/5 text-primary border-primary/30 flex items-center gap-2"
+              >
+                {isLoading ? <Loader2 size={16} className="animate-spin" /> : 'Load More Leads'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

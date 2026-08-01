@@ -2,7 +2,7 @@ export interface PriorityRule {
   id: string;
   name: string;
   target_field: string;
-  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'is_in';
+  operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than';
   value: string | number;
   points: number;
   is_active: boolean;
@@ -39,18 +39,6 @@ export function evaluateRule(rule: PriorityRule, context: EvaluationContext): bo
       
     case 'less_than':
       return Number(fieldValue) < Number(ruleValue);
-      
-    case 'contains':
-      if (typeof fieldValue === 'string') {
-        return fieldValue.toLowerCase().includes(String(ruleValue).toLowerCase().trim());
-      }
-      return false;
-      
-    case 'is_in':
-      if (Array.isArray(ruleValue)) {
-        return ruleValue.map(v => String(v).toLowerCase().trim()).includes(String(fieldValue).toLowerCase().trim());
-      }
-      return false;
       
     default:
       return false;

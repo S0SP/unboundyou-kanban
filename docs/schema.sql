@@ -12,6 +12,13 @@ CREATE TABLE users (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- 1b. Ticket Types (Dynamic Enums)
+CREATE TABLE ticket_types (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- 2. Leads (Parents / Core Records)
 CREATE TABLE leads (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -143,6 +150,7 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 -- 9. Row Level Security (RLS) Policies
 -- ==============================================================================
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ticket_types ENABLE ROW LEVEL SECURITY;
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
@@ -152,9 +160,42 @@ ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
 
 -- Allow authenticated users full access (can be restricted later based on role)
 CREATE POLICY "Allow authenticated users full access on users" ON users FOR ALL TO authenticated USING (true);
+CREATE POLICY "Allow authenticated users full access on ticket_types" ON ticket_types FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated users full access on leads" ON leads FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated users full access on tickets" ON tickets FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated users full access on tasks" ON tasks FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated users full access on priority_rules" ON priority_rules FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated users full access on activities" ON activities FOR ALL TO authenticated USING (true);
 CREATE POLICY "Allow authenticated users full access on notes" ON notes FOR ALL TO authenticated USING (true);
+
+-- ==============================================================================
+-- 10. Initial Data Seed
+-- ==============================================================================
+-- Insert initial default ticket types
+INSERT INTO ticket_types (name) VALUES 
+('Scheduling'), 
+('Rescheduling'), 
+('Admission Inquiry'), 
+('Payment Issue'), 
+('e-book related problem'), 
+('demo booking problem')
+ON CONFLICT (name) DO NOTHING;
+
+-- ==============================================================================
+-- 11. RPC Functions (Analytics & Utilities)
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION get_ticket_volume_by_type()
+RETURNS TABLE (ticket_type text, count bigint)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT t.ticket_type, COUNT(*) as count
+  FROM tickets t
+  GROUP BY t.ticket_type;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION get_ticket_volume_by_type TO authenticated;
+
