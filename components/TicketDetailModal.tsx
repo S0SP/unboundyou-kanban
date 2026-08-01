@@ -33,6 +33,7 @@ export default function TicketDetailModal() {
     addTask, 
     toggleTask, 
     deleteTask,
+    addNote,
     ticketTypes 
   } = useStore();
 
