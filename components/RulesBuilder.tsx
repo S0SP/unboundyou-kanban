@@ -123,15 +123,20 @@ export default function RulesBuilder() {
       
       {/* Rule Builder Form Panel */}
       <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex justify-between items-start">
+          <div className="space-y-2 max-w-2xl">
             <h3 className="text-lg font-bold text-gray-900">Custom Priority Rules</h3>
             <p className="text-xs text-gray-400">Configure weighting conditions to calculate lead priority scores automatically.</p>
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-3 mt-2 text-xs text-indigo-900/80 leading-relaxed">
+              <strong>How scoring works:</strong> Tickets start at 0 points (Medium priority). You can add or subtract points using rules. <br/>
+              <span className="text-red-600 font-medium">IMPORTANT: Only tickets that reach 70+ points (High) or 90+ points (Critical) will appear in the Dashboard's Priority Queue. Tickets with scores below 70 will NOT show up there.</span> <br/>
+              Example: Assigning 80 points to &quot;Payment Pending&quot; tickets immediately flags them for urgent action.
+            </div>
           </div>
           {!isAdding && (
             <button 
               onClick={() => setIsAdding(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white hover:bg-primary/95 rounded-xl text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white hover:bg-primary/95 rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0"
             >
               <Plus size={14} />
               <span>Create Rule</span>
