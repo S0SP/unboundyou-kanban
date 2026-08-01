@@ -32,11 +32,7 @@ export default function Dashboard() {
     return user ? user.name : 'System';
   };
 
-  // --- Calculations ---
-  // 1. Potential Revenue (Sum of active leads estimated values)
-  const potentialRevenue = leads
-    .filter(l => l.status === 'active')
-    .reduce((sum, l) => sum + Number(l.estimated_value), 0);
+
 
   // 2. Today's sessions count
   const todayStr = new Date().toISOString().split('T')[0];
@@ -98,7 +94,6 @@ export default function Dashboard() {
   };
 
   const stats = [
-    { label: 'Potential Revenue', value: `₹${potentialRevenue.toLocaleString('en-IN')}`, icon: TrendingUp, color: 'text-primary bg-primary/10' },
     { label: "Today's Sessions", value: String(todaySessionsCount), icon: Calendar, color: 'text-[#08BD7E] bg-[#08BD7E]/10' },
     { label: 'Active Tickets', value: String(activeTicketsCount), icon: TicketIcon, color: 'text-orange-500 bg-orange-50' },
     { label: 'Pending Tasks', value: String(openTasksCount), icon: AlertCircle, color: 'text-red-500 bg-red-50' },
@@ -238,10 +233,7 @@ export default function Dashboard() {
                       </div>
 
                       <div className="flex items-center gap-3">
-                        <div className="text-right hidden sm:block">
-                          <p className="text-xs text-gray-400">Est. Value</p>
-                          <p className="text-sm font-bold text-gray-800">₹{lead?.estimated_value.toLocaleString('en-IN') || 0}</p>
-                        </div>
+
                         <ChevronRight size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
                       </div>
                     </div>

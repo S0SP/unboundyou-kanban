@@ -24,7 +24,7 @@ const STAGES: Ticket['stage'][] = [
   'Dropped'
 ];
 
-export default function KanbanBoard() {
+export default function KanbanBoard({ boardType }: { boardType: 'leads' | 'tickets' }) {
   const { tickets, leads, tasks, moveTicketStage, setSelectedTicketId, setCreateTicketOpen, setPreselectedTicketStage } = useStore();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -79,7 +79,11 @@ export default function KanbanBoard() {
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex-1 overflow-x-auto pb-4 scrollbar-hide flex gap-4 pr-6 min-h-[calc(100vh-170px)] items-start">
           {STAGES.map((stage) => {
-            const stageTickets = tickets.filter(t => t.stage === stage);
+            const stageTickets = tickets.filter(t => t.stage === stage && (
+              boardType === 'leads' 
+                ? (t.ticket_type === 'Lead' || t.ticket_type === 'Admission Inquiry')
+                : (t.ticket_type !== 'Lead' && t.ticket_type !== 'Admission Inquiry')
+            ));
             
             return (
               <div 
@@ -178,9 +182,7 @@ export default function KanbanBoard() {
                                         <span>{new Date(ticket.session_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                                       </div>
                                     )}
-                                    <div className="font-bold text-gray-700">
-                                      ₹{((lead?.estimated_value || 0) / 1000).toFixed(0)}k
-                                    </div>
+
                                   </div>
                                 </div>
                               </div>

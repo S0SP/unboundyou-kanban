@@ -61,7 +61,7 @@ export default function LeadsView() {
               <tr className="bg-gray-50/70 border-b border-gray-100 text-gray-400 font-semibold uppercase tracking-wider text-[10px]">
                 <th className="py-4 px-6">Parent & Student</th>
                 <th className="py-4 px-6">Contact Info</th>
-                <th className="py-4 px-6 text-right">Est. Deal Value</th>
+
                 <th className="py-4 px-6">Assigned Counselor</th>
                 <th className="py-4 px-6 text-center">Active Tickets</th>
                 <th className="py-4 px-6">Registered Date</th>
@@ -120,10 +120,7 @@ export default function LeadsView() {
                       </div>
                     </td>
 
-                    {/* Deal Value */}
-                    <td className="py-4 px-6 text-right font-bold text-gray-900">
-                      ₹{lead.estimated_value.toLocaleString('en-IN')}
-                    </td>
+
 
                     {/* Counselor */}
                     <td className="py-4 px-6">

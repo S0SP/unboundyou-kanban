@@ -99,7 +99,7 @@ interface AppState {
   isLoading: boolean;
   
   // UI State
-  activeTab: 'dashboard' | 'kanban' | 'leads' | 'rules';
+  activeTab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules';
   selectedTicketId: string | null;
   isCreateLeadOpen: boolean;
   isCreateTicketOpen: boolean;
@@ -113,7 +113,7 @@ interface AppState {
   
   // Actions
   fetchData: () => Promise<void>;
-  setActiveTab: (tab: 'dashboard' | 'kanban' | 'leads' | 'rules') => void;
+  setActiveTab: (tab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules') => void;
   setSelectedTicketId: (id: string | null) => void;
   setCreateLeadOpen: (open: boolean) => void;
   setCreateTicketOpen: (open: boolean) => void;
@@ -446,6 +446,17 @@ export const useStore = create<AppState>((set, get) => ({
       lead_id: data.id,
       type: 'ticket_created',
       message: `Lead manually added for parent ${data.parent_name} (Student: ${data.student_name})`
+    });
+
+    // Automatically create a Lead Ticket for the Kanban board
+    await get().addTicket({
+      lead_id: data.id,
+      title: 'Initial Lead Inquiry',
+      description: 'System generated ticket for new lead',
+      ticket_type: 'Lead',
+      stage: 'New Leads',
+      due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+      assigned_to: leadData.assigned_to,
     });
   },
 

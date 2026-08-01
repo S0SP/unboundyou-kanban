@@ -339,7 +339,9 @@ export default function TicketDetailModal() {
                     { label: "Scheduling", value: "Scheduling" },
                     { label: "Rescheduling", value: "Rescheduling" },
                     { label: "Admission Inquiry", value: "Admission Inquiry" },
-                    { label: "Payment Issue", value: "Payment Issue" }
+                    { label: "Payment Issue", value: "Payment Issue" },
+                    { label: "e-book related problem", value: "e-book related problem" },
+                    { label: "demo booking problem", value: "demo booking problem" }
                   ]}
                 />
               </div>

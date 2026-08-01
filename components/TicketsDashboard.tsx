@@ -1,0 +1,239 @@
+'use client';
+
+import React, { useState, useMemo } from 'react';
+import { useStore, Ticket, Lead } from '@/lib/useStore';
+import { CustomSelect } from '@/components/CustomSelect';
+import { 
+  PieChart, 
+  Filter, 
+  Ticket as TicketIcon,
+  ChevronRight,
+  Clock
+} from 'lucide-react';
+
+export default function TicketsDashboard() {
+  const { tickets, leads, users, setSelectedTicketId } = useStore();
+  
+  const [typeFilter, setTypeFilter] = useState<string>('All');
+  const [stageFilter, setStageFilter] = useState<string>('All Stages');
+
+  const ticketTypes = [
+    'Scheduling', 
+    'Rescheduling', 
+    'Admission Inquiry', 
+    'Payment Issue', 
+    'e-book related problem', 
+    'demo booking problem'
+  ];
+
+  const stages = [
+    'New Leads', 
+    'Contacted', 
+    'Session Scheduled', 
+    'Session Completed', 
+    'Follow Up', 
+    'Interested', 
+    'Payment Pending', 
+    'Converted', 
+    'Closed', 
+    'Dropped'
+  ];
+
+  const getUserName = (userId: string | null): string => {
+    if (!userId) return 'System';
+    const user = users.find(u => u.id === userId);
+    return user ? user.name : 'System';
+  };
+
+  const getLeadInfo = (leadId: string): Lead | undefined => {
+    return leads.find(l => l.id === leadId);
+  };
+
+  // 1. Calculate Analytics for Volume by Ticket Type (Ignoring stage filter for overall volume)
+  const typeVolumes = useMemo(() => {
+    const volumes: Record<string, number> = {};
+    ticketTypes.forEach(type => {
+      volumes[type] = tickets.filter(t => t.ticket_type === type).length;
+    });
+    return volumes;
+  }, [tickets]);
+
+  // 2. Filter Tickets for the List View
+  const filteredTickets = useMemo(() => {
+    return tickets.filter(t => {
+      const matchType = typeFilter === 'All' || t.ticket_type === typeFilter;
+      const matchStage = stageFilter === 'All Stages' || t.stage === stageFilter;
+      return matchType && matchStage;
+    });
+  }, [tickets, typeFilter, stageFilter]);
+
+  const getPriorityColor = (level: Ticket['priority_level']) => {
+    switch (level) {
+      case 'Critical':
+        return 'bg-red-50 text-red-600 border-red-100';
+      case 'High':
+        return 'bg-orange-50 text-orange-600 border-orange-100';
+      case 'Medium':
+        return 'bg-blue-50 text-blue-600 border-blue-100';
+      case 'Low':
+        return 'bg-gray-50 text-gray-500 border-gray-100';
+      default:
+        return 'bg-gray-50 text-gray-500 border-gray-100';
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      
+      {/* 1. Analytics Cards */}
+      <div>
+        <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+          <PieChart size={20} className="text-[#08BD7E]" /> Ticket Volume by Problem Type
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {ticketTypes.map(type => (
+            <div 
+              key={type}
+              onClick={() => setTypeFilter(type)}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-sm ${
+                typeFilter === type 
+                  ? 'border-[#08BD7E] bg-[#08BD7E]/5' 
+                  : 'hover:border-[#08BD7E]/50'
+              }`}
+              style={{
+                backgroundColor: typeFilter === type ? undefined : 'var(--bg-panel)',
+                borderColor: typeFilter === type ? '#08BD7E' : 'var(--border-base)'
+              }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wider truncate mb-1" style={{ color: 'var(--text-muted)' }} title={type}>
+                {type}
+              </p>
+              <p className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                {typeVolumes[type] || 0}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 2. Advanced Filtering */}
+      <div 
+        className="p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-4 items-center justify-between"
+        style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
+      >
+        <div className="flex items-center gap-2">
+          <Filter size={18} style={{ color: 'var(--text-muted)' }} />
+          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Advanced Filters</h3>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="w-full sm:w-48">
+            <CustomSelect 
+              value={typeFilter}
+              onChange={(val) => setTypeFilter(val)}
+              options={[
+                { label: 'All Ticket Types', value: 'All' },
+                ...ticketTypes.map(t => ({ label: t, value: t }))
+              ]}
+              className="bg-transparent"
+            />
+          </div>
+          
+          {(typeFilter !== 'All' || stageFilter !== 'All Stages') && (
+            <button 
+              onClick={() => {
+                setTypeFilter('All');
+                setStageFilter('All Stages');
+              }}
+              className="text-xs font-semibold hover:text-red-500 transition-colors whitespace-nowrap px-3"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Summarized List View */}
+      <div 
+        className="border rounded-2xl p-5 shadow-sm space-y-4"
+        style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Filtered Tickets List</h3>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              Showing {filteredTickets.length} ticket{filteredTickets.length !== 1 && 's'} matching criteria
+            </p>
+          </div>
+          <div className="p-2 bg-[#08BD7E]/10 text-[#08BD7E] rounded-xl">
+            <TicketIcon size={20} />
+          </div>
+        </div>
+
+        <div className="divide-y max-h-[600px] overflow-y-auto pr-1" style={{ borderColor: 'var(--border-base)' }}>
+          {filteredTickets.length > 0 ? (
+            filteredTickets.map((ticket) => {
+              const lead = getLeadInfo(ticket.lead_id);
+              return (
+                <div 
+                  key={ticket.id}
+                  onClick={() => setSelectedTicketId(ticket.id)}
+                  className="py-4 flex flex-col sm:flex-row sm:items-center justify-between rounded-xl px-3 -mx-3 cursor-pointer transition-colors group gap-4 hover:bg-[#08BD7E]/5"
+                >
+                  <div className="space-y-1.5 flex-1 min-w-0 pr-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getPriorityColor(ticket.priority_level)}`}>
+                        {ticket.priority_level} ({ticket.priority_score})
+                      </span>
+                      <span 
+                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold border"
+                        style={{ backgroundColor: 'var(--bg-panel)', color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}
+                      >
+                        {ticket.ticket_type}
+                      </span>
+                      <span 
+                        className="text-[10px] px-2 py-0.5 rounded-full font-semibold border text-[#08BD7E] bg-[#08BD7E]/10 border-[#08BD7E]/20"
+                      >
+                        {ticket.stage}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-semibold truncate group-hover:text-[#08BD7E] transition-colors" style={{ color: 'var(--text-primary)' }}>
+                      {ticket.title}
+                    </h4>
+                    <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                      Parent: <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{lead?.parent_name || 'N/A'}</span> • 
+                      Student: <span className="font-medium" style={{ color: 'var(--text-primary)' }}> {lead?.student_name || 'N/A'}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={14} />
+                      <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 w-24">
+                      <div 
+                        className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                        style={{ backgroundColor: 'var(--bg-panel)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}
+                      >
+                        {getUserName(ticket.assigned_to).charAt(0)}
+                      </div>
+                      <span className="truncate">{getUserName(ticket.assigned_to).split(' ')[0]}</span>
+                    </div>
+                    <ChevronRight size={16} className="group-hover:text-[#08BD7E] transition-colors" style={{ color: 'var(--border-base)' }} />
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-12 text-center text-gray-400 text-sm">
+              No tickets found matching the current filters.
+            </div>
+          )}
+        </div>
+      </div>
+
+    </div>
+  );
+}

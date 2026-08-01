@@ -16,8 +16,12 @@ export default function Header({ setIsOpenMobile }: HeaderProps) {
     switch (activeTab) {
       case 'dashboard':
         return `Hello, ${currentUser?.name?.split(' ')[0] || 'User'} 👋`;
-      case 'kanban':
-        return 'Kanban Pipeline';
+      case 'tickets-dashboard':
+        return 'Tickets Analytics';
+      case 'leads-kanban':
+        return 'Leads Kanban';
+      case 'tickets-kanban':
+        return 'Tickets Kanban';
       case 'leads':
         return 'Leads Directory';
       case 'rules':
@@ -31,8 +35,12 @@ export default function Header({ setIsOpenMobile }: HeaderProps) {
     switch (activeTab) {
       case 'dashboard':
         return "Here is your agenda and high-priority lead queue.";
-      case 'kanban':
-        return 'Drag and drop tickets to manage parent conversions.';
+      case 'tickets-dashboard':
+        return 'Analyze and filter ticket volumes by type and stage.';
+      case 'leads-kanban':
+        return 'Drag and drop leads to manage pipeline.';
+      case 'tickets-kanban':
+        return 'Drag and drop tickets to manage support and operations.';
       case 'leads':
         return 'Register parent queries and create conversion tickets.';
       case 'rules':

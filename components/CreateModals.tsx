@@ -190,16 +190,7 @@ export default function CreateModals() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500 font-semibold">Estimated Deal Value (₹) *</label>
-                  <input 
-                    type="number" 
-                    value={estValue}
-                    onChange={(e) => setEstValue(e.target.value)}
-                    className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
-                    required
-                  />
-                </div>
+
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500 font-semibold">Lead Source</label>
                   <CustomSelect 
@@ -304,7 +295,9 @@ export default function CreateModals() {
                       { label: "Scheduling", value: "Scheduling" },
                       { label: "Rescheduling", value: "Rescheduling" },
                       { label: "Admission Inquiry", value: "Admission Inquiry" },
-                      { label: "Payment Issue", value: "Payment Issue" }
+                      { label: "Payment Issue", value: "Payment Issue" },
+                      { label: "e-book related problem", value: "e-book related problem" },
+                      { label: "demo booking problem", value: "demo booking problem" }
                     ]}
                   />
                 </div>
