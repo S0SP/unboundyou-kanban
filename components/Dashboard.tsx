@@ -24,6 +24,7 @@ import TicketsDashboard from '@/components/TicketsDashboard';
 export default function Dashboard() {
   const { tickets, leads, tasks, activities, users, toggleTask, addTask, deleteTask, setSelectedTicketId, updateTicket } = useStore();
   const [taskFilter, setTaskFilter] = useState<'pending' | 'completed'>('pending');
+  const [stageFilter, setStageFilter] = useState<string>('All Stages');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskTicketId, setNewTaskTicketId] = useState('');
@@ -100,9 +101,30 @@ export default function Dashboard() {
   };
 
   const stats = [
-    { label: "Today's Sessions", value: String(todaySessionsCount), icon: Calendar, color: 'text-[#08BD7E] bg-[#08BD7E]/10' },
-    { label: 'Pending Tickets', value: String(pendingTicketsCount), icon: TicketIcon, color: 'text-orange-500 bg-orange-50' },
-    { label: 'Resolved Tickets', value: String(resolvedTicketsCount), icon: CheckCircle2, color: 'text-green-500 bg-green-50' },
+    { 
+      label: "Today's Sessions", 
+      value: String(todaySessionsCount), 
+      icon: Calendar, 
+      color: 'text-[#08BD7E] bg-[#08BD7E]/10',
+      onClick: undefined,
+      active: false
+    },
+    { 
+      label: 'Pending Tickets', 
+      value: String(pendingTicketsCount), 
+      icon: TicketIcon, 
+      color: 'text-orange-500 bg-orange-50',
+      onClick: () => setStageFilter(stageFilter === 'Pending' ? 'All Stages' : 'Pending'),
+      active: stageFilter === 'Pending'
+    },
+    { 
+      label: 'Resolved Tickets', 
+      value: String(resolvedTicketsCount), 
+      icon: CheckCircle2, 
+      color: 'text-green-500 bg-green-50',
+      onClick: () => setStageFilter(stageFilter === 'Resolved' ? 'All Stages' : 'Resolved'),
+      active: stageFilter === 'Resolved'
+    },
   ];
 
   return (
@@ -114,8 +136,25 @@ export default function Dashboard() {
           return (
             <div
               key={i}
-              className="border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow"
-              style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
+              onClick={stat.onClick}
+              className={`border p-5 rounded-2xl flex items-center justify-between shadow-sm transition-all ${
+                stat.onClick 
+                  ? 'cursor-pointer hover:shadow-md select-none' 
+                  : ''
+              } ${
+                stat.active 
+                  ? 'scale-[1.01]' 
+                  : ''
+              }`}
+              style={{ 
+                backgroundColor: 'var(--bg-panel)', 
+                borderColor: stat.active 
+                  ? (stat.label === 'Pending Tickets' ? '#f97316' : '#22c55e')
+                  : 'var(--border-base)',
+                boxShadow: stat.active
+                  ? (stat.label === 'Pending Tickets' ? '0 0 0 3px rgba(249, 115, 22, 0.15)' : '0 0 0 3px rgba(34, 197, 94, 0.15)')
+                  : undefined
+              }}
             >
               <div className="space-y-1">
                 <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>{stat.label}</p>
@@ -127,6 +166,22 @@ export default function Dashboard() {
             </div>
           );
         })}
+
+        {/* Clear Filter Card */}
+        {stageFilter !== 'All Stages' && (
+          <div
+            onClick={() => setStageFilter('All Stages')}
+            className="border p-5 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-all cursor-pointer select-none border-red-200 hover:border-red-300 bg-red-50/20 hover:bg-red-50/40 dark:border-red-900/30 dark:hover:border-red-900/50 dark:bg-red-950/10 dark:hover:bg-red-950/20 animate-in fade-in zoom-in-95 duration-200"
+          >
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-red-500 dark:text-red-400">Filter Active</p>
+              <h3 className="text-lg font-bold text-red-600 dark:text-red-300">Clear Filter</h3>
+            </div>
+            <div className="p-3 rounded-xl bg-red-100/50 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+              <X size={20} strokeWidth={2.5} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* --- Alert Banners --- */}
@@ -267,7 +322,7 @@ export default function Dashboard() {
 
         {/* Tickets Dashboard directly rendered */}
         <div>
-          <TicketsDashboard />
+          <TicketsDashboard stageFilter={stageFilter} setStageFilter={setStageFilter} />
         </div>
       </div>
     </div>

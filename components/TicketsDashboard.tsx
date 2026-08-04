@@ -20,11 +20,22 @@ import {
 
 const supabase = createClient();
 
-export default function TicketsDashboard() {
+interface TicketsDashboardProps {
+  stageFilter?: string;
+  setStageFilter?: (val: string) => void;
+}
+
+export default function TicketsDashboard({
+  stageFilter: propStageFilter,
+  setStageFilter: propSetStageFilter,
+}: TicketsDashboardProps = {}) {
   const { tickets, users, setSelectedTicketId, ticketTypes, setCreateTicketOpen, setPreselectedTicketStage, updateTicket } = useStore();
 
   const [typeFilter, setTypeFilter] = useState<string>('All');
-  const [stageFilter, setStageFilter] = useState<string>('All Stages');
+  const [localStageFilter, setLocalStageFilter] = useState<string>('All Stages');
+
+  const stageFilter = propStageFilter !== undefined ? propStageFilter : localStageFilter;
+  const setStageFilter = propSetStageFilter !== undefined ? propSetStageFilter : setLocalStageFilter;
 
   // Server-side state
   const [typeVolumes, setTypeVolumes] = useState<Record<string, number>>({});

@@ -41,8 +41,18 @@ CREATE TABLE tickets (
     title TEXT NOT NULL,
     description TEXT,
     ticket_type TEXT NOT NULL, -- e.g., 'Scheduling', 'Rescheduling', 'Admission Inquiry', 'Payment Issue'
-    stage TEXT NOT NULL DEFAULT 'Pending' CHECK (stage IN (
-        'Pending', 
+    stage TEXT NOT NULL DEFAULT 'New Lead' CHECK (stage IN (
+        'New Lead',
+        'Contacted',
+        'Session Scheduled',
+        'Session Completed',
+        'Follow Up',
+        'Interested',
+        'Payment Pending',
+        'Converted',
+        'Closed',
+        'Dropped',
+        'Pending',
         'Resolved'
     )),
     priority_level TEXT NOT NULL DEFAULT 'Medium' CHECK (priority_level IN ('Critical', 'High', 'Medium', 'Low')),
