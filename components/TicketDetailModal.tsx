@@ -285,7 +285,7 @@ export default function TicketDetailModal() {
                   type="date"
                   value={ticket.session_date ? ticket.session_date.split('T')[0] : ''}
                   onChange={(e) => {
-                    const dateVal = e.target.value ? new Date(e.target.value).toISOString() : undefined;
+                    const dateVal = e.target.value ? new Date(e.target.value).toISOString() : null;
                     updateTicket(ticket.id, { session_date: dateVal });
                   }}
                   className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
@@ -299,7 +299,7 @@ export default function TicketDetailModal() {
                   type="date"
                   value={ticket.due_date ? ticket.due_date.split('T')[0] : ''}
                   onChange={(e) => {
-                    const dateVal = e.target.value ? new Date(e.target.value).toISOString() : undefined;
+                    const dateVal = e.target.value ? new Date(e.target.value).toISOString() : null;
                     updateTicket(ticket.id, { due_date: dateVal });
                   }}
                   className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
@@ -314,7 +314,7 @@ export default function TicketDetailModal() {
                   </label>
                   {ticket.reminder_at && (
                     <button
-                      onClick={() => updateTicket(ticket.id, { reminder_at: undefined })}
+                      onClick={() => updateTicket(ticket.id, { reminder_at: null })}
                       className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-md transition-colors"
                       title="Remove reminder"
                     >
@@ -326,7 +326,7 @@ export default function TicketDetailModal() {
                   type="datetime-local"
                   value={ticket.reminder_at ? ticket.reminder_at.slice(0, 16) : ''}
                   onChange={(e) => {
-                    const val = e.target.value ? new Date(e.target.value).toISOString() : undefined;
+                    const val = e.target.value ? new Date(e.target.value).toISOString() : null;
                     updateTicket(ticket.id, { reminder_at: val });
                   }}
                   className="w-full text-sm border border-amber-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-amber-300 shadow-sm"

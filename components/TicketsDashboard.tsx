@@ -21,7 +21,7 @@ import {
 const supabase = createClient();
 
 export default function TicketsDashboard() {
-  const { users, setSelectedTicketId, ticketTypes, setCreateTicketOpen, setPreselectedTicketStage, updateTicket } = useStore();
+  const { tickets, users, setSelectedTicketId, ticketTypes, setCreateTicketOpen, setPreselectedTicketStage, updateTicket } = useStore();
 
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [stageFilter, setStageFilter] = useState<string>('All Stages');
@@ -130,6 +130,14 @@ export default function TicketsDashboard() {
   useEffect(() => {
     fetchTickets(false);
   }, [typeFilter, stageFilter]);
+
+  // Keep local filteredTickets in sync with global store updates
+  useEffect(() => {
+    setFilteredTickets(prev => prev.map(t => {
+      const updated = tickets.find(storeTicket => storeTicket.id === t.id);
+      return updated ? updated : t;
+    }));
+  }, [tickets]);
 
   const getPriorityColor = (level: Ticket['priority_level']) => {
     switch (level) {

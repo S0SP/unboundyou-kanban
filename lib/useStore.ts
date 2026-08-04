@@ -39,19 +39,19 @@ export interface Ticket {
   title: string;
   description: string;
   ticket_type: string;
-  stage: 
-    | 'New Leads' 
-    | 'Contacted' 
-    | 'Session Scheduled' 
-    | 'Session Completed' 
-    | 'Follow Up' 
-    | 'Interested' 
-    | 'Payment Pending' 
-    | 'Converted' 
-    | 'Closed' 
-    | 'Dropped'
-    | 'Pending'
-    | 'Resolved';
+  stage:
+  | 'New Leads'
+  | 'Contacted'
+  | 'Session Scheduled'
+  | 'Session Completed'
+  | 'Follow Up'
+  | 'Interested'
+  | 'Payment Pending'
+  | 'Converted'
+  | 'Closed'
+  | 'Dropped'
+  | 'Pending'
+  | 'Resolved';
   priority_level: 'Critical' | 'High' | 'Medium' | 'Low';
   priority_score: number;
   due_date: string;
@@ -106,7 +106,7 @@ interface AppState {
   hasMoreTickets: boolean;
   leadsPage: number;
   ticketsPage: number;
-  
+
   // UI State
   activeTab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules';
   selectedTicketId: string | null;
@@ -119,7 +119,7 @@ interface AppState {
   preselectedLeadId: string | null;
   preselectedTicketStage: Ticket['stage'] | null;
   isDarkMode: boolean;
-  
+
   // Actions
   setupSubscriptions: () => void;
   fetchData: () => Promise<void>;
@@ -138,28 +138,28 @@ interface AppState {
   toggleDarkMode: () => void;
   updateUserSettings: (settings: Partial<NonNullable<User['settings']>>) => Promise<void>;
   subscribeToActivities: () => void;
-  
+
   addLead: (lead: Omit<Lead, 'id' | 'created_at' | 'updated_at' | 'status'>) => Promise<void>;
   updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
-  
+
   addTicket: (ticket: Omit<Ticket, 'id' | 'created_at' | 'updated_at' | 'priority_score' | 'priority_level'>) => Promise<void>;
   updateTicket: (id: string, updates: Partial<Ticket>) => Promise<void>;
   moveTicketStage: (ticketId: string, newStage: Ticket['stage']) => Promise<void>;
-  
+
   addTask: (task: Omit<Task, 'id' | 'created_at' | 'completed'>) => Promise<void>;
   toggleTask: (taskId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
-  
+
   addRule: (rule: Omit<PriorityRule, 'id'>) => Promise<void>;
   updateRule: (id: string, updates: Partial<PriorityRule>) => Promise<void>;
   deleteRule: (id: string) => Promise<void>;
-  
+
   addNote: (leadId: string, content: string) => Promise<void>;
   addActivity: (activity: Omit<Activity, 'id' | 'created_at' | 'created_by'>) => Promise<void>;
-  
+
   addTicketType: (name: string) => Promise<void>;
   removeTicketType: (name: string) => Promise<void>;
-  
+
   recalculateAllPriorities: () => void;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   updateUserData: (userId: string, updates: Partial<User>) => Promise<void>;
@@ -170,10 +170,10 @@ interface AppState {
 // --- Helper function for dynamic score recalculation ---
 function evaluatePriorityHelper(ticket: Ticket, lead: Lead | undefined, rules: PriorityRule[]): { score: number; level: Ticket['priority_level'] } {
   if (!lead) return { score: 0, level: 'Medium' };
-  
+
   const lastContactDate = new Date(ticket.updated_at || Date.now());
   const daysSinceLastContact = Math.floor((Date.now() - lastContactDate.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   let daysToSession = -999;
   if (ticket.session_date) {
     const sessionTime = new Date(ticket.session_date);
@@ -196,7 +196,7 @@ function evaluatePriorityHelper(ticket: Ticket, lead: Lead | undefined, rules: P
 // --- Dynamic Task Templates Generator ---
 function generateTasksForStage(ticketId: string, stage: Ticket['stage']): Omit<Task, 'id' | 'created_at' | 'completed'>[] {
   const tasks: Omit<Task, 'id' | 'created_at' | 'completed'>[] = [];
-  
+
   switch (stage) {
     case 'Session Scheduled':
       tasks.push(
@@ -259,10 +259,10 @@ export const useStore = create<AppState>((set, get) => ({
   preselectedLeadId: null,
   preselectedTicketStage: null,
   isDarkMode: false,
-  
+
   // Actions
   setIsSearchOpen: (open) => set({ isSearchOpen: open }),
-  
+
   setIsCollapsed: (collapsed) => {
     set({ isCollapsed: collapsed });
     const { updateUserSettings } = get();
@@ -318,14 +318,14 @@ export const useStore = create<AppState>((set, get) => ({
         (payload) => {
           const newActivity = payload.new as Activity;
           const { activities, unreadActivities } = get();
-          
+
           // Only process if it's a new activity (avoid duplicates)
           if (!activities.find(a => a.id === newActivity.id)) {
-            set({ 
+            set({
               activities: [newActivity, ...activities],
-              unreadActivities: unreadActivities + 1 
+              unreadActivities: unreadActivities + 1
             });
-            
+
             // Dispatch a custom event to trigger sonner toast globally
             if (typeof window !== 'undefined') {
               window.dispatchEvent(new CustomEvent('new_activity', { detail: newActivity }));
@@ -421,12 +421,12 @@ export const useStore = create<AppState>((set, get) => ({
       const activities = results[5].data;
       const notes = results[6].data || [];
       const ticketTypesRes = results[7];
-      const fetchedTicketTypes = ticketTypesRes && !ticketTypesRes.error 
-          ? ticketTypesRes.data.map((row: any) => row.name) 
-          : ['Scheduling', 'Rescheduling', 'Admission Inquiry', 'Payment Issue', 'e-book related problem', 'demo booking problem'];
+      const fetchedTicketTypes = ticketTypesRes && !ticketTypesRes.error
+        ? ticketTypesRes.data.map((row: any) => row.name)
+        : ['Scheduling', 'Rescheduling', 'Admission Inquiry', 'Payment Issue', 'e-book related problem', 'demo booking problem'];
 
       let currentUser = users?.find(u => u.id === authData.user.id) || null;
-      
+
       // Auto-provision user if triggers haven't executed yet
       if (!currentUser && authData.user) {
         const { data: newUser, error: insertError } = await supabase.from('users').insert({
@@ -436,7 +436,7 @@ export const useStore = create<AppState>((set, get) => ({
           avatar_url: authData.user.user_metadata?.avatar_url,
           role: 'counselor'
         }).select().single();
-        
+
         if (!insertError && newUser) {
           currentUser = newUser;
         }
@@ -506,18 +506,18 @@ export const useStore = create<AppState>((set, get) => ({
     const nextPage = leadsPage + 1;
     const start = nextPage * 50;
     const end = start + 49;
-    
+
     try {
       const { data, error } = await supabase.from('leads')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .range(start, end);
-        
+
       if (error) throw error;
-      
+
       if (data) {
-        set({ 
+        set({
           leads: [...leads, ...data],
           leadsPage: nextPage,
           hasMoreLeads: data.length === 50
@@ -533,18 +533,18 @@ export const useStore = create<AppState>((set, get) => ({
     const nextPage = ticketsPage + 1;
     const start = nextPage * 50;
     const end = start + 49;
-    
+
     try {
       const { data, error } = await supabase.from('tickets')
         .select('*')
         .not('stage', 'in', '("Closed","Dropped","Converted")')
         .order('created_at', { ascending: false })
         .range(start, end);
-        
+
       if (error) throw error;
-      
+
       if (data) {
-        set({ 
+        set({
           tickets: [...tickets, ...data],
           ticketsPage: nextPage,
           hasMoreTickets: data.length === 50
@@ -564,7 +564,7 @@ export const useStore = create<AppState>((set, get) => ({
         return;
       }
       set({ leads: [data, ...get().leads] });
-      
+
       // Log Activity
       await get().addActivity({
         lead_id: data.id,
@@ -596,7 +596,7 @@ export const useStore = create<AppState>((set, get) => ({
         toast.error(`Failed to update lead: ${error.message}`);
         return;
       }
-      
+
       set({ leads: get().leads.map(l => l.id === id ? data : l) });
       get().recalculateAllPriorities();
       toast.success('Lead updated successfully!');
@@ -610,9 +610,9 @@ export const useStore = create<AppState>((set, get) => ({
       const tempTicket = { ...ticketData, priority_level: 'Medium' as const, priority_score: 0 };
       const lead = get().leads.find(l => l.id === ticketData.lead_id);
       const { score, level } = evaluatePriorityHelper(tempTicket as unknown as Ticket, lead, get().rules);
-      
+
       const newTicket = { ...ticketData, priority_level: level, priority_score: score };
-      
+
       const { data, error } = await supabase.from('tickets').insert([newTicket]).select().single();
       if (error) {
         toast.error(`Failed to create ticket: ${error.message}`);
@@ -635,7 +635,7 @@ export const useStore = create<AppState>((set, get) => ({
         type: 'ticket_created',
         message: `Ticket "${data.title}" created in stage ${data.stage}`
       });
-      
+
       toast.success('Ticket created successfully!');
     } catch (e) {
       toast.error('An unexpected error occurred while creating the ticket.');
@@ -650,13 +650,13 @@ export const useStore = create<AppState>((set, get) => ({
       const merged = { ...ticket, ...updates };
       const lead = get().leads.find(l => l.id === merged.lead_id);
       const { score, level } = evaluatePriorityHelper(merged as unknown as Ticket, lead, get().rules);
-      
+
       const { data, error } = await supabase.from('tickets').update({
         ...updates,
         priority_score: score,
         priority_level: level
       }).eq('id', id).select().single();
-      
+
       if (error) {
         toast.error(`Failed to update ticket: ${error.message}`);
         return;
@@ -686,10 +686,10 @@ export const useStore = create<AppState>((set, get) => ({
 
       const { error } = await supabase.from('tickets').update({ stage: newStage, priority_score: score, priority_level: level }).eq('id', ticketId).select().single();
       if (error) {
-         // Rollback
-         set({ tickets: get().tickets.map(t => t.id === ticketId ? ticket : t) });
-         toast.error(`Failed to move ticket: ${error.message}`);
-         return;
+        // Rollback
+        set({ tickets: get().tickets.map(t => t.id === ticketId ? ticket : t) });
+        toast.error(`Failed to move ticket: ${error.message}`);
+        return;
       }
 
       const stageTasks = generateTasksForStage(ticketId, newStage);
@@ -703,7 +703,7 @@ export const useStore = create<AppState>((set, get) => ({
         type: 'stage_changed',
         message: `Stage moved from "${oldStage}" to "${newStage}"`
       });
-      
+
       toast.success(`Ticket moved to ${newStage}`);
     } catch (e) {
       toast.error('An unexpected error occurred while moving the ticket.');
@@ -712,7 +712,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   addTask: async (taskData) => {
     try {
-      const { data, error } = await supabase.from('tasks').insert([{...taskData, completed: false}]).select().single();
+      const { data, error } = await supabase.from('tasks').insert([{ ...taskData, completed: false }]).select().single();
       if (error) {
         toast.error(`Failed to add task: ${error.message}`);
         return;
@@ -727,9 +727,9 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const task = get().tasks.find(t => t.id === taskId);
       if (!task) return;
-      
+
       const newStatus = !task.completed;
-      
+
       // Optimistic update
       set({ tasks: get().tasks.map(t => t.id === taskId ? { ...t, completed: newStatus } : t) });
 
@@ -821,7 +821,7 @@ export const useStore = create<AppState>((set, get) => ({
         toast.error(`Failed to add note: ${error.message}`);
         return;
       }
-      
+
       set({ notes: [data, ...get().notes] });
 
       await get().addActivity({
@@ -850,14 +850,14 @@ export const useStore = create<AppState>((set, get) => ({
     const rules = get().rules;
     const leads = get().leads;
     const tickets = get().tickets;
-    
+
     const updatedTickets = tickets.map(t => {
       const lead = leads.find(l => l.id === t.lead_id);
       const { score, level } = evaluatePriorityHelper(t, lead, rules);
       if (t.priority_score !== score || t.priority_level !== level) {
-         // Queue an async update in background
-         supabase.from('tickets').update({ priority_score: score, priority_level: level }).eq('id', t.id).then();
-         return { ...t, priority_score: score, priority_level: level };
+        // Queue an async update in background
+        supabase.from('tickets').update({ priority_score: score, priority_level: level }).eq('id', t.id).then();
+        return { ...t, priority_score: score, priority_level: level };
       }
       return t;
     });
@@ -903,12 +903,12 @@ export const useStore = create<AppState>((set, get) => ({
   updateProfile: async (updates) => {
     const { currentUser } = get();
     if (!currentUser) return;
-    
+
     const { error } = await supabase
       .from('users')
       .update(updates)
       .eq('id', currentUser.id);
-      
+
     if (!error) {
       set({
         currentUser: {
@@ -932,13 +932,13 @@ export const useStore = create<AppState>((set, get) => ({
       .from('users')
       .update(updates)
       .eq('id', userId);
-      
+
     if (!error) {
       const { users, currentUser } = get();
       set({
         users: users.map(u => u.id === userId ? { ...u, ...updates } : u)
       });
-      
+
       // If we updated ourselves, reflect it
       if (currentUser?.id === userId) {
         set({

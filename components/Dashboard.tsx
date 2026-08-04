@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import { useStore, Ticket, Lead } from '@/lib/useStore';
 import { CustomSelect } from '@/components/CustomSelect';
-import { 
-  TrendingUp, 
-  Calendar, 
-  Ticket as TicketIcon, 
+import {
+  TrendingUp,
+  Calendar,
+  Ticket as TicketIcon,
   AlertCircle,
   Clock,
   CheckCircle2,
@@ -51,7 +51,7 @@ export default function Dashboard() {
 
   // 5. High & Critical Priority Queue & Recurring (Starred)
   const priorityQueue = [...tickets]
-    .filter(t => t.priority_level === 'Critical' || t.priority_level === 'High' || t.is_recurring)
+    .filter(t => (t.priority_level === 'Critical' || t.priority_level === 'High' || t.is_recurring) && t.stage !== 'Resolved' && t.stage !== 'Closed' && t.stage !== 'Dropped')
     .sort((a, b) => {
       if (a.is_recurring && !b.is_recurring) return -1;
       if (!a.is_recurring && b.is_recurring) return 1;
@@ -60,7 +60,7 @@ export default function Dashboard() {
 
   // 6. Filtered Tasks list
   const filteredTasks = tasks.filter(t => taskFilter === 'pending' ? !t.completed : t.completed);
-  
+
   // Active tickets for drop-down selection
   const activeTicketOptions = tickets.filter(t => t.stage !== 'Closed' && t.stage !== 'Dropped');
 
@@ -192,7 +192,7 @@ export default function Dashboard() {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    updateTicket(ticket.id, { reminder_at: undefined });
+                    updateTicket(ticket.id, { reminder_at: null });
                   }}
                   className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-md transition-colors shrink-0 ml-1"
                   title="Remove reminder"
@@ -207,7 +207,7 @@ export default function Dashboard() {
 
       {/* 2. Main Content - Priority Queue & Tickets */}
       <div className="space-y-8">
-        
+
         {/* Priority Queue Widget */}
         <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
@@ -225,7 +225,7 @@ export default function Dashboard() {
               priorityQueue.map((ticket) => {
                 const lead = getLeadInfo(ticket.lead_id);
                 return (
-                  <div 
+                  <div
                     key={ticket.id}
                     onClick={() => setSelectedTicketId(ticket.id)}
                     className="py-3 flex items-center justify-between hover:bg-gray-50/70 rounded-xl px-2 -mx-2 cursor-pointer transition-colors group"
@@ -246,7 +246,7 @@ export default function Dashboard() {
                         {ticket.title}
                       </h4>
                       <p className="text-xs text-gray-400 truncate">
-                        Parent: <span className="font-medium text-gray-600">{lead?.parent_name || 'N/A'}</span> • 
+                        Parent: <span className="font-medium text-gray-600">{lead?.parent_name || 'N/A'}</span> •
                         Student: <span className="font-medium text-gray-600"> {lead?.student_name || 'N/A'}</span>
                       </p>
                     </div>
