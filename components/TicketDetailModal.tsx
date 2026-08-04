@@ -261,7 +261,7 @@ export default function TicketDetailModal() {
               <div className="space-y-1.5">
                 <label className="text-xs text-gray-500 font-semibold">Assigned Counselor</label>
                 <CustomSelect 
-                  value={ticket.assigned_to}
+                  value={ticket.assigned_to || ''}
                   onChange={(val) => updateTicket(ticket.id, { assigned_to: val })}
                   className="rounded-xl px-3 bg-white"
                   options={users.map(u => ({ label: u.name, value: u.id }))}

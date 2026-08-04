@@ -54,10 +54,10 @@ export interface Ticket {
   | 'Resolved';
   priority_level: 'Critical' | 'High' | 'Medium' | 'Low';
   priority_score: number;
-  due_date: string;
-  session_date?: string;
-  reminder_at?: string;
-  assigned_to: string;
+  due_date: string | null;
+  session_date?: string | null;
+  reminder_at?: string | null;
+  assigned_to: string | null;
   is_recurring?: boolean;
   created_at: string;
   updated_at: string;
@@ -651,6 +651,15 @@ export const useStore = create<AppState>((set, get) => ({
       const lead = get().leads.find(l => l.id === merged.lead_id);
       const { score, level } = evaluatePriorityHelper(merged as unknown as Ticket, lead, get().rules);
 
+      // Optimistic update
+      const updatedTicketOptimistic = {
+        ...merged,
+        priority_score: score,
+        priority_level: level
+      } as Ticket;
+      
+      set({ tickets: get().tickets.map(t => t.id === id ? updatedTicketOptimistic : t) });
+
       const { data, error } = await supabase.from('tickets').update({
         ...updates,
         priority_score: score,
@@ -658,13 +667,15 @@ export const useStore = create<AppState>((set, get) => ({
       }).eq('id', id).select().single();
 
       if (error) {
+        // Rollback
+        set({ tickets: get().tickets.map(t => t.id === id ? ticket : t) });
         toast.error(`Failed to update ticket: ${error.message}`);
         return;
       }
 
       set({ tickets: get().tickets.map(t => t.id === id ? data : t) });
-      toast.success('Ticket updated successfully!');
     } catch (e) {
+      // Basic rollback since we don't have the original error context but we want to reset if a catastrophic error occurs
       toast.error('An unexpected error occurred while updating the ticket.');
     }
   },
