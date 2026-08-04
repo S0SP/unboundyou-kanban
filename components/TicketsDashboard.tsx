@@ -35,7 +35,7 @@ export default function TicketsDashboard() {
   const [hasMore, setHasMore] = useState(true);
 
   const stages = [
-    'New Leads',
+    'New Lead',
     'Contacted',
     'Session Scheduled',
     'Session Completed',

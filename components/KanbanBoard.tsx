@@ -13,7 +13,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { CustomSelect } from '@/components/CustomSelect';
 
 const STAGES: Ticket['stage'][] = [
-  'New Leads', 
+  'New Lead',
   'Contacted', 
   'Session Scheduled', 
   'Session Completed', 

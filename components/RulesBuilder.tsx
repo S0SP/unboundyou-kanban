@@ -225,7 +225,7 @@ export default function RulesBuilder() {
                     className="rounded-xl px-3 bg-white"
                     options={[
                       { label: "Select Stage...", value: "" },
-                      { label: "New Leads", value: "New Leads" },
+                      { label: "New Lead", value: "New Lead" },
                       { label: "Contacted", value: "Contacted" },
                       { label: "Session Scheduled", value: "Session Scheduled" },
                       { label: "Session Completed", value: "Session Completed" },

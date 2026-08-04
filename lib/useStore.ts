@@ -40,7 +40,7 @@ export interface Ticket {
   description: string;
   ticket_type: string;
   stage:
-  | 'New Leads'
+  | 'New Lead'
   | 'Contacted'
   | 'Session Scheduled'
   | 'Session Completed'
@@ -578,7 +578,7 @@ export const useStore = create<AppState>((set, get) => ({
         title: 'Initial Lead Inquiry',
         description: 'System generated ticket for new lead',
         ticket_type: 'Lead',
-        stage: 'New Leads',
+        stage: 'New Lead',
         due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
         assigned_to: leadData.assigned_to,
       });

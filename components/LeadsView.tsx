@@ -190,14 +190,29 @@ export default function LeadsView() {
 
                     {/* Actions column */}
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => handleCreateTicketForLead(lead.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs font-semibold transition-colors"
-                        title="Create pipeline ticket for this lead"
-                      >
-                        <Plus size={12} />
-                        Create Ticket
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleCreateTicketForLead(lead.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs font-semibold transition-colors"
+                          title="Create pipeline ticket for this lead"
+                        >
+                          <Plus size={12} />
+                          Create Ticket
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to remove this lead?')) {
+                              useStore.getState().updateLead(lead.id, { status: 'archived' }).then(() => {
+                                setFilteredLeads(prev => prev.filter(l => l.id !== lead.id));
+                              });
+                            }
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-xs font-semibold transition-colors"
+                          title="Remove this lead"
+                        >
+                          Remove
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
