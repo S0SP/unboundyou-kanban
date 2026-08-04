@@ -19,6 +19,8 @@ import {
   Zap
 } from 'lucide-react';
 
+import TicketsDashboard from '@/components/TicketsDashboard';
+
 export default function Dashboard() {
   const { tickets, leads, tasks, activities, users, toggleTask, addTask, deleteTask, setSelectedTicketId } = useStore();
   const [taskFilter, setTaskFilter] = useState<'pending' | 'completed'>('pending');
@@ -47,10 +49,14 @@ export default function Dashboard() {
   // 4. Overdue / Open tasks count
   const openTasksCount = tasks.filter(t => !t.completed).length;
 
-  // 5. High & Critical Priority Queue
+  // 5. High & Critical Priority Queue & Recurring (Starred)
   const priorityQueue = [...tickets]
-    .filter(t => t.priority_level === 'Critical' || t.priority_level === 'High')
-    .sort((a, b) => b.priority_score - a.priority_score);
+    .filter(t => t.priority_level === 'Critical' || t.priority_level === 'High' || t.is_recurring)
+    .sort((a, b) => {
+      if (a.is_recurring && !b.is_recurring) return -1;
+      if (!a.is_recurring && b.is_recurring) return 1;
+      return b.priority_score - a.priority_score;
+    });
 
   // 6. Filtered Tasks list
   const filteredTasks = tasks.filter(t => taskFilter === 'pending' ? !t.completed : t.completed);
@@ -189,244 +195,70 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 2. Content Layout Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* 2. Main Content - Priority Queue & Tickets */}
+      <div className="space-y-8">
         
-        {/* Left 2 Columns: Priority Queue & Activity */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Priority Queue Widget */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Priority Queue</h3>
-                <p className="text-xs text-gray-400">Critical & High priority actions calculated from rules</p>
-              </div>
-              <span className="px-2.5 py-1 bg-red-50 text-red-600 rounded-full text-xs font-semibold border border-red-100">
-                {priorityQueue.length} Urgent Action{priorityQueue.length === 1 ? '' : 's'}
-              </span>
+        {/* Priority Queue Widget */}
+        <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Priority Queue</h3>
+              <p className="text-xs text-gray-400">Critical & High priority actions calculated from rules, and Starred tickets</p>
             </div>
-
-            <div className="divide-y divide-gray-50 max-h-[380px] overflow-y-auto pr-1">
-              {priorityQueue.length > 0 ? (
-                priorityQueue.map((ticket) => {
-                  const lead = getLeadInfo(ticket.lead_id);
-                  return (
-                    <div 
-                      key={ticket.id}
-                      onClick={() => setSelectedTicketId(ticket.id)}
-                      className="py-3 flex items-center justify-between hover:bg-gray-50/70 rounded-xl px-2 -mx-2 cursor-pointer transition-colors group"
-                    >
-                      <div className="space-y-1 flex-1 min-w-0 pr-4">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getPriorityColor(ticket.priority_level)}`}>
-                            {ticket.priority_level} ({ticket.priority_score})
-                          </span>
-                          <span className="text-xs text-gray-400 font-medium truncate">{ticket.ticket_type}</span>
-                        </div>
-                        <h4 className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary transition-colors">
-                          {ticket.title}
-                        </h4>
-                        <p className="text-xs text-gray-400 truncate">
-                          Parent: <span className="font-medium text-gray-600">{lead?.parent_name || 'N/A'}</span> • 
-                          Student: <span className="font-medium text-gray-600"> {lead?.student_name || 'N/A'}</span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-
-                        <ChevronRight size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-8 text-center text-gray-400 text-sm">
-                  No critical or high priority tickets at the moment. Good job!
-                </div>
-              )}
-            </div>
+            <span className="px-2.5 py-1 bg-red-50 text-red-600 rounded-full text-xs font-semibold border border-red-100">
+              {priorityQueue.length} Urgent Action{priorityQueue.length === 1 ? '' : 's'}
+            </span>
           </div>
 
-          {/* Recent Activity Feed */}
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Activity Timeline</h3>
-              <p className="text-xs text-gray-400">Latest actions performed by counselors</p>
-            </div>
-
-            <div className="space-y-4 max-h-[250px] overflow-y-auto pr-1">
-              {activities.length > 0 ? (
-                activities.slice(0, 5).map((act) => (
-                  <div key={act.id} className="flex gap-3 text-sm">
-                    <div className="mt-0.5 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 shrink-0">
-                      <Clock size={12} />
-                    </div>
-                    <div className="flex-1 space-y-0.5">
-                      <p className="text-gray-700 text-sm leading-tight">
-                        <span className="font-semibold text-gray-900">{getUserName(act.created_by)}</span> {act.message}
+          <div className="divide-y divide-gray-50 max-h-[380px] overflow-y-auto pr-1">
+            {priorityQueue.length > 0 ? (
+              priorityQueue.map((ticket) => {
+                const lead = getLeadInfo(ticket.lead_id);
+                return (
+                  <div 
+                    key={ticket.id}
+                    onClick={() => setSelectedTicketId(ticket.id)}
+                    className="py-3 flex items-center justify-between hover:bg-gray-50/70 rounded-xl px-2 -mx-2 cursor-pointer transition-colors group"
+                  >
+                    <div className="space-y-1 flex-1 min-w-0 pr-4">
+                      <div className="flex items-center gap-2">
+                        {ticket.is_recurring && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold border border-amber-200 bg-amber-50 text-amber-600 flex items-center gap-1">
+                            ⭐ Starred
+                          </span>
+                        )}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getPriorityColor(ticket.priority_level)}`}>
+                          {ticket.priority_level} ({ticket.priority_score})
+                        </span>
+                        <span className="text-xs text-gray-400 font-medium truncate">{ticket.ticket_type}</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary transition-colors">
+                        {ticket.title}
+                      </h4>
+                      <p className="text-xs text-gray-400 truncate">
+                        Parent: <span className="font-medium text-gray-600">{lead?.parent_name || 'N/A'}</span> • 
+                        Student: <span className="font-medium text-gray-600"> {lead?.student_name || 'N/A'}</span>
                       </p>
-                      <span className="text-[10px] text-gray-400">
-                        {new Date(act.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {new Date(act.created_at).toLocaleDateString()}
-                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <ChevronRight size={16} className="text-gray-400 group-hover:text-primary transition-colors" />
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="py-4 text-center text-gray-400 text-sm">
-                  No activity logged yet.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Right 1 Column: Today's Tasks Checklist */}
-        <div className="space-y-6">
-          <div className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4 h-full flex flex-col">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">My Action Items</h3>
-                <p className="text-xs text-gray-400">Manage tasks linked to pipeline tickets</p>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-gray-400 text-sm">
+                No critical or high priority tickets at the moment. Good job!
               </div>
-              <button 
-                onClick={() => setIsAddingTask(!isAddingTask)}
-                className="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg transition-colors"
-                title="Add custom task"
-              >
-                {isAddingTask ? <X size={16} /> : <Plus size={16} />}
-              </button>
-            </div>
-
-            {/* Inline Task Form */}
-            {isAddingTask && (
-              <form 
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  if (!newTaskTitle.trim() || !newTaskTicketId) return;
-                  await addTask({
-                    title: newTaskTitle.trim(),
-                    ticket_id: newTaskTicketId,
-                    auto_generated: false
-                  });
-                  setNewTaskTitle('');
-                  setIsAddingTask(false);
-                }}
-                className="p-3 border border-indigo-100 rounded-xl bg-indigo-50/20 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-200"
-              >
-                <div className="text-xs font-semibold text-indigo-950/80">Add Custom Action</div>
-                <input 
-                  type="text" 
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="What needs to be done?"
-                  className="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-400 bg-white"
-                  required
-                />
-                <CustomSelect 
-                  value={newTaskTicketId}
-                  onChange={(val) => setNewTaskTicketId(val)}
-                  options={activeTicketOptions.map(t => {
-                    const l = getLeadInfo(t.lead_id);
-                    return {
-                      value: t.id,
-                      label: l ? `${l.student_name} (${t.ticket_type})` : t.title
-                    };
-                  })}
-                  placeholder="Select Ticket/Student..."
-                  className="text-xs h-9"
-                />
-                <div className="flex gap-2 justify-end">
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      setIsAddingTask(false);
-                      setNewTaskTitle('');
-                    }}
-                    className="text-[10px] px-2.5 py-1.5 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg transition-colors font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit"
-                    className="text-[10px] px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium"
-                  >
-                    Add Task
-                  </button>
-                </div>
-              </form>
             )}
-
-            {/* Tabs */}
-            <div className="flex border-b border-gray-100 pb-1 gap-4">
-              <button 
-                onClick={() => setTaskFilter('pending')}
-                className={`text-xs font-semibold pb-1.5 border-b-2 transition-all ${taskFilter === 'pending' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-              >
-                Pending ({tasks.filter(t => !t.completed).length})
-              </button>
-              <button 
-                onClick={() => setTaskFilter('completed')}
-                className={`text-xs font-semibold pb-1.5 border-b-2 transition-all ${taskFilter === 'completed' ? 'border-primary text-primary' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
-              >
-                Completed ({tasks.filter(t => t.completed).length})
-              </button>
-            </div>
-
-            <div className="flex-1 space-y-3 overflow-y-auto max-h-[420px] pr-1">
-              {filteredTasks.length > 0 ? (
-                filteredTasks.map((task) => {
-                  const linkedTicket = tickets.find(t => t.id === task.ticket_id);
-                  return (
-                    <div 
-                      key={task.id}
-                      className="p-3 border border-gray-100 rounded-xl hover:border-primary/20 transition-all bg-gray-50/20 flex gap-3 items-start group relative"
-                    >
-                      <button 
-                        onClick={() => toggleTask(task.id)}
-                        className={`mt-0.5 transition-colors shrink-0 ${task.completed ? 'text-[#08BD7E]' : 'text-gray-300 hover:text-primary'}`}
-                      >
-                        {task.completed ? (
-                          <CheckCircle2 size={18} className="fill-[#08BD7E]/10" />
-                        ) : (
-                          <div className="w-[18px] h-[18px] rounded-full border-2 border-slate-300 hover:border-primary transition-all group-hover:scale-105" />
-                        )}
-                      </button>
-                      
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-sm font-semibold leading-snug group-hover:text-primary transition-colors ${task.completed ? 'text-slate-400 line-through' : 'text-gray-800'}`}>
-                          {task.title}
-                        </h4>
-                        {linkedTicket && (
-                          <p className="text-[11px] text-gray-400 font-medium truncate mt-0.5">
-                            Ticket: {linkedTicket.title}
-                          </p>
-                        )}
-                      </div>
-
-                      <button 
-                        onClick={async () => {
-                          if (confirm('Are you sure you want to delete this task?')) {
-                            await deleteTask(task.id);
-                          }
-                        }}
-                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1"
-                        title="Delete task"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center text-gray-400 text-sm flex flex-col items-center justify-center gap-2 h-full">
-                  <CheckSquare size={32} className="text-slate-300 mb-1" />
-                  <p>{taskFilter === 'pending' ? 'All tasks complete! You are clear for today.' : 'No completed tasks yet.'}</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
 
+        {/* Tickets Dashboard directly rendered */}
+        <div>
+          <TicketsDashboard />
+        </div>
       </div>
     </div>
   );

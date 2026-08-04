@@ -29,9 +29,7 @@ export default function Sidebar({ isOpenMobile, setIsOpenMobile }: SidebarProps)
 
   const navItems = [
     { id: 'dashboard', label: 'Main Dashboard', icon: LayoutDashboard },
-    { id: 'tickets-dashboard', label: 'Tickets Analytics', icon: PieChart },
     { id: 'leads-kanban', label: 'Leads Kanban', icon: Kanban },
-    { id: 'tickets-kanban', label: 'Tickets Kanban', icon: TicketIcon },
     { id: 'leads', label: 'Leads & Queries', icon: Users },
     { id: 'rules', label: 'Priority Rules', icon: Settings },
   ] as const;

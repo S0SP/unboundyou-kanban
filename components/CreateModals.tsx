@@ -43,6 +43,7 @@ export default function CreateModals() {
   const [sessionDate, setSessionDate] = useState('');
   const [reminderDate, setReminderDate] = useState('');
   const [reminderTime, setReminderTime] = useState('09:00');
+  const [isRecurring, setIsRecurring] = useState(false);
 
   // Sync default values once users & preselected fields are loaded
   useEffect(() => {
@@ -113,6 +114,7 @@ export default function CreateModals() {
       session_date: sessionDate ? new Date(sessionDate).toISOString() : undefined,
       reminder_at: reminderDate ? new Date(`${reminderDate}T${reminderTime || '09:00'}`).toISOString() : undefined,
       assigned_to: ticketAssignee,
+      is_recurring: isRecurring,
     });
 
     // Reset & Close
@@ -123,6 +125,7 @@ export default function CreateModals() {
     setSessionDate('');
     setReminderDate('');
     setReminderTime('09:00');
+    setIsRecurring(false);
     handleCloseTicketModal();
   };
 
@@ -275,14 +278,17 @@ export default function CreateModals() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-gray-500 font-semibold">Details / Description</label>
+                <label className="text-xs text-gray-500 font-semibold">Ticket Description</label>
                 <textarea 
-                  rows={3}
+                  rows={4}
                   value={ticketDescription}
                   onChange={(e) => setTicketDescription(e.target.value)}
-                  placeholder="Provide context regarding rescheduling or demo schedule..." 
+                  placeholder="e.g. The student missed the last 2 classes due to illness. They are available for a makeup class on Friday evening..." 
                   className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white resize-none"
                 />
+                <p className="text-[10px] text-gray-400 leading-tight">
+                  Provide specific details to help resolve the ticket faster (e.g., reasons for the request, relevant dates, or student availability).
+                </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -350,6 +356,17 @@ export default function CreateModals() {
                   />
                 </div>
                 <p className="text-[10px] text-amber-600 dark:text-amber-500/80">You&apos;ll see an alert on the dashboard when this reminder is due.</p>
+              </div>
+
+              {/* Recurring / Star Toggle */}
+              <div className="flex items-center gap-3 border border-gray-100 p-3 rounded-xl bg-gray-50/50 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setIsRecurring(!isRecurring)}>
+                <div className={`p-1.5 rounded-full transition-colors ${isRecurring ? 'text-amber-500 bg-amber-100' : 'text-gray-400 bg-white border border-gray-200'}`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isRecurring ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-gray-800">Mark as Priority (Star)</h4>
+                  <p className="text-[10px] text-gray-500">This ticket will automatically jump to the Priority Queue.</p>
+                </div>
               </div>
 
               <div className="space-y-1">
