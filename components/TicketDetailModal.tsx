@@ -308,9 +308,20 @@ export default function TicketDetailModal() {
 
               {/* Reminder Section */}
               <div className="space-y-1.5 border border-amber-100 bg-amber-50 rounded-xl p-3">
-                <label className="text-xs text-amber-600 dark:text-amber-500 font-bold flex items-center gap-1.5">
-                  <span>🔔</span> Reminder Date &amp; Time
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-amber-600 dark:text-amber-500 font-bold flex items-center gap-1.5">
+                    <span>🔔</span> Reminder Date &amp; Time
+                  </label>
+                  {ticket.reminder_at && (
+                    <button
+                      onClick={() => updateTicket(ticket.id, { reminder_at: undefined })}
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-md transition-colors"
+                      title="Remove reminder"
+                    >
+                      <X size={14} strokeWidth={2.5} />
+                    </button>
+                  )}
+                </div>
                 <input
                   type="datetime-local"
                   value={ticket.reminder_at ? ticket.reminder_at.slice(0, 16) : ''}

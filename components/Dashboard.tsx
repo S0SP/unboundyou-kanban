@@ -22,7 +22,7 @@ import {
 import TicketsDashboard from '@/components/TicketsDashboard';
 
 export default function Dashboard() {
-  const { tickets, leads, tasks, activities, users, toggleTask, addTask, deleteTask, setSelectedTicketId } = useStore();
+  const { tickets, leads, tasks, activities, users, toggleTask, addTask, deleteTask, setSelectedTicketId, updateTicket } = useStore();
   const [taskFilter, setTaskFilter] = useState<'pending' | 'completed'>('pending');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -43,11 +43,11 @@ export default function Dashboard() {
     return t.session_date.startsWith(todayStr);
   }).length;
 
-  // 3. Active tickets count
-  const activeTicketsCount = tickets.filter(t => t.stage !== 'Closed' && t.stage !== 'Dropped' && t.stage !== 'Converted').length;
+  // 3. Pending tickets count
+  const pendingTicketsCount = tickets.filter(t => t.stage === 'Pending').length;
 
-  // 4. Overdue / Open tasks count
-  const openTasksCount = tasks.filter(t => !t.completed).length;
+  // 4. Resolved tickets count
+  const resolvedTicketsCount = tickets.filter(t => t.stage === 'Resolved').length;
 
   // 5. High & Critical Priority Queue & Recurring (Starred)
   const priorityQueue = [...tickets]
@@ -101,8 +101,8 @@ export default function Dashboard() {
 
   const stats = [
     { label: "Today's Sessions", value: String(todaySessionsCount), icon: Calendar, color: 'text-[#08BD7E] bg-[#08BD7E]/10' },
-    { label: 'Active Tickets', value: String(activeTicketsCount), icon: TicketIcon, color: 'text-orange-500 bg-orange-50' },
-    { label: 'Pending Tasks', value: String(openTasksCount), icon: AlertCircle, color: 'text-red-500 bg-red-50' },
+    { label: 'Pending Tickets', value: String(pendingTicketsCount), icon: TicketIcon, color: 'text-orange-500 bg-orange-50' },
+    { label: 'Resolved Tickets', value: String(resolvedTicketsCount), icon: CheckCircle2, color: 'text-green-500 bg-green-50' },
   ];
 
   return (
@@ -189,6 +189,16 @@ export default function Dashboard() {
                 <span className="text-[10px] bg-amber-500 text-white px-2 py-0.5 rounded-full font-bold shrink-0">
                   REMINDER
                 </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateTicket(ticket.id, { reminder_at: undefined });
+                  }}
+                  className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-md transition-colors shrink-0 ml-1"
+                  title="Remove reminder"
+                >
+                  <X size={16} strokeWidth={2.5} />
+                </button>
               </div>
             );
           })}

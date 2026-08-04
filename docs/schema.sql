@@ -41,20 +41,13 @@ CREATE TABLE tickets (
     title TEXT NOT NULL,
     description TEXT,
     ticket_type TEXT NOT NULL, -- e.g., 'Scheduling', 'Rescheduling', 'Admission Inquiry', 'Payment Issue'
-    stage TEXT NOT NULL DEFAULT 'New Leads' CHECK (stage IN (
-        'New Leads', 
-        'Contacted', 
-        'Session Scheduled', 
-        'Session Completed', 
-        'Follow Up', 
-        'Interested', 
-        'Payment Pending', 
-        'Converted', 
-        'Closed', 
-        'Dropped'
+    stage TEXT NOT NULL DEFAULT 'Pending' CHECK (stage IN (
+        'Pending', 
+        'Resolved'
     )),
     priority_level TEXT NOT NULL DEFAULT 'Medium' CHECK (priority_level IN ('Critical', 'High', 'Medium', 'Low')),
     priority_score INTEGER NOT NULL DEFAULT 0,
+    is_recurring BOOLEAN NOT NULL DEFAULT FALSE,
     due_date TIMESTAMP WITH TIME ZONE,
     session_date TIMESTAMP WITH TIME ZONE,
     reminder_at TIMESTAMP WITH TIME ZONE,

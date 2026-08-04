@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore, Ticket } from '@/lib/useStore';
-import { X } from 'lucide-react';
+import { X, Star } from 'lucide-react';
 import { CustomSelect } from '@/components/CustomSelect';
 
 export default function CreateModals() {
@@ -338,9 +338,24 @@ export default function CreateModals() {
 
               {/* Reminder Date + Time */}
               <div className="space-y-1 border border-amber-100 bg-amber-50 rounded-xl p-3">
-                <label className="text-xs text-amber-600 dark:text-amber-500 font-bold flex items-center gap-1.5">
-                  <span>🔔</span> Reminder Date &amp; Time (optional)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-amber-600 dark:text-amber-500 font-bold flex items-center gap-1.5">
+                    <span>🔔</span> Reminder Date &amp; Time (optional)
+                  </label>
+                  {(reminderDate || reminderTime !== '09:00') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReminderDate('');
+                        setReminderTime('09:00');
+                      }}
+                      className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-md transition-colors"
+                      title="Clear reminder"
+                    >
+                      <X size={14} strokeWidth={2.5} />
+                    </button>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input 
                     type="date"
@@ -361,7 +376,7 @@ export default function CreateModals() {
               {/* Recurring / Star Toggle */}
               <div className="flex items-center gap-3 border border-gray-100 p-3 rounded-xl bg-gray-50/50 cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => setIsRecurring(!isRecurring)}>
                 <div className={`p-1.5 rounded-full transition-colors ${isRecurring ? 'text-amber-500 bg-amber-100' : 'text-gray-400 bg-white border border-gray-200'}`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill={isRecurring ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  <Star size={16} fill={isRecurring ? "currentColor" : "none"} />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-gray-800">Mark as Priority (Star)</h4>
