@@ -37,7 +37,7 @@ export default function CreateModals() {
   const [ticketTitle, setTicketTitle] = useState('');
   const [ticketDescription, setTicketDescription] = useState('');
   const [ticketType, setTicketType] = useState(ticketTypes[0] || 'Scheduling');
-  const [ticketStage, setTicketStage] = useState<Ticket['stage']>('New Leads');
+  const [ticketStage, setTicketStage] = useState<Ticket['stage']>('Pending');
   const [ticketAssignee, setTicketAssignee] = useState(users[0]?.id || '');
   const [dueDate, setDueDate] = useState('');
   const [sessionDate, setSessionDate] = useState('');
@@ -63,7 +63,7 @@ export default function CreateModals() {
       if (preselectedTicketStage) {
         setTicketStage(preselectedTicketStage);
       } else {
-        setTicketStage('New Leads');
+        setTicketStage('Pending');
       }
     }
   }, [isCreateTicketOpen, preselectedLeadId, preselectedTicketStage, leads]);
@@ -296,20 +296,14 @@ export default function CreateModals() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500 font-semibold">Initial Column Stage</label>
+                  <label className="text-xs text-gray-500 font-semibold">Status</label>
                   <CustomSelect 
                     value={ticketStage}
                     onChange={(val) => setTicketStage(val as Ticket['stage'])}
                     className="rounded-xl px-3 bg-white"
                     options={[
-                      { label: "New Leads", value: "New Leads" },
-                      { label: "Contacted", value: "Contacted" },
-                      { label: "Session Scheduled", value: "Session Scheduled" },
-                      { label: "Session Completed", value: "Session Completed" },
-                      { label: "Follow Up", value: "Follow Up" },
-                      { label: "Interested", value: "Interested" },
-                      { label: "Payment Pending", value: "Payment Pending" },
-                      { label: "Converted", value: "Converted" }
+                      { label: "Pending", value: "Pending" },
+                      { label: "Resolved", value: "Resolved" }
                     ]}
                   />
                 </div>

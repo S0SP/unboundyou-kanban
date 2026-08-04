@@ -5,20 +5,24 @@ import { useStore, Ticket, Lead } from '@/lib/useStore';
 import { CustomSelect } from '@/components/CustomSelect';
 import { createClient } from '@/utils/supabase/client';
 import { toast } from 'sonner';
-import { 
-  PieChart, 
-  Filter, 
+import {
+  PieChart,
+  Filter,
   Ticket as TicketIcon,
   ChevronRight,
   Clock,
-  Loader2
+  Loader2,
+  CheckCircle,
+  Circle,
+  Star,
+  Plus
 } from 'lucide-react';
 
 const supabase = createClient();
 
 export default function TicketsDashboard() {
-  const { users, setSelectedTicketId, ticketTypes } = useStore();
-  
+  const { users, setSelectedTicketId, ticketTypes, setCreateTicketOpen, setPreselectedTicketStage, updateTicket } = useStore();
+
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [stageFilter, setStageFilter] = useState<string>('All Stages');
 
@@ -31,15 +35,15 @@ export default function TicketsDashboard() {
   const [hasMore, setHasMore] = useState(true);
 
   const stages = [
-    'New Leads', 
-    'Contacted', 
-    'Session Scheduled', 
-    'Session Completed', 
-    'Follow Up', 
-    'Interested', 
-    'Payment Pending', 
-    'Converted', 
-    'Closed', 
+    'New Leads',
+    'Contacted',
+    'Session Scheduled',
+    'Session Completed',
+    'Follow Up',
+    'Interested',
+    'Payment Pending',
+    'Converted',
+    'Closed',
     'Dropped'
   ];
 
@@ -61,7 +65,7 @@ export default function TicketsDashboard() {
         toast.error('Failed to load ticket analytics');
         return;
       }
-      
+
       if (data) {
         const volumes: Record<string, number> = {};
         data.forEach((row: any) => {
@@ -76,13 +80,13 @@ export default function TicketsDashboard() {
   // Fetch Paginated Filtered Tickets
   const fetchTickets = useCallback(async (isLoadMore = false) => {
     setIsLoadingList(true);
-    
+
     const start = isLoadMore ? (page + 1) * 20 : 0;
     const end = start + 19;
 
     try {
       let query = supabase.from('tickets').select('*').order('created_at', { ascending: false }).range(start, end);
-      
+
       if (typeFilter !== 'All') {
         query = query.eq('ticket_type', typeFilter);
       }
@@ -91,7 +95,7 @@ export default function TicketsDashboard() {
       }
 
       const { data: ticketsData, error } = await query;
-      
+
       if (error) throw error;
 
       if (ticketsData) {
@@ -113,7 +117,7 @@ export default function TicketsDashboard() {
           setFilteredTickets(ticketsData as Ticket[]);
           setPage(0);
         }
-        
+
         setHasMore(ticketsData.length === 20);
       }
     } catch (e: any) {
@@ -144,22 +148,32 @@ export default function TicketsDashboard() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      
+
       {/* 1. Analytics Cards */}
       <div>
-        <h2 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
-          <PieChart size={20} className="text-[#08BD7E]" /> Ticket Volume by Problem Type
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <PieChart size={20} className="text-[#08BD7E]" /> Ticket Volume by Problem Type
+          </h2>
+          <button
+            onClick={() => {
+              setPreselectedTicketStage('Pending');
+              setCreateTicketOpen(true);
+            }}
+            className="px-4 py-2 bg-[#08BD7E] text-white hover:bg-[#08BD7E]/95 rounded-xl text-sm font-semibold shadow-sm transition-colors flex items-center gap-2"
+          >
+            <Plus size={16} /> Create Ticket
+          </button>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {ticketTypes.map(type => (
-            <div 
+            <div
               key={type}
               onClick={() => setTypeFilter(type)}
-              className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-sm ${
-                typeFilter === type 
-                  ? 'border-[#08BD7E] bg-[#08BD7E]/5' 
+              className={`p-4 rounded-2xl border cursor-pointer transition-all shadow-sm ${typeFilter === type
+                  ? 'border-[#08BD7E] bg-[#08BD7E]/5'
                   : 'hover:border-[#08BD7E]/50'
-              }`}
+                }`}
               style={{
                 backgroundColor: typeFilter === type ? undefined : 'var(--bg-panel)',
                 borderColor: typeFilter === type ? '#08BD7E' : 'var(--border-base)'
@@ -177,7 +191,7 @@ export default function TicketsDashboard() {
       </div>
 
       {/* 2. Advanced Filtering */}
-      <div 
+      <div
         className="p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-4 items-center justify-between"
         style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
       >
@@ -185,10 +199,10 @@ export default function TicketsDashboard() {
           <Filter size={18} style={{ color: 'var(--text-muted)' }} />
           <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Advanced Filters</h3>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="w-full sm:w-48">
-            <CustomSelect 
+            <CustomSelect
               value={typeFilter}
               onChange={(val) => setTypeFilter(val)}
               options={[
@@ -198,9 +212,22 @@ export default function TicketsDashboard() {
               className="bg-transparent"
             />
           </div>
-          
+
+          <div className="w-full sm:w-48">
+            <CustomSelect
+              value={stageFilter}
+              onChange={(val) => setStageFilter(val)}
+              options={[
+                { label: 'All Stages', value: 'All Stages' },
+                { label: 'Pending', value: 'Pending' },
+                { label: 'Resolved', value: 'Resolved' }
+              ]}
+              className="bg-transparent"
+            />
+          </div>
+
           {(typeFilter !== 'All' || stageFilter !== 'All Stages') && (
-            <button 
+            <button
               onClick={() => {
                 setTypeFilter('All');
                 setStageFilter('All Stages');
@@ -215,7 +242,7 @@ export default function TicketsDashboard() {
       </div>
 
       {/* 3. Summarized List View */}
-      <div 
+      <div
         className="border rounded-2xl p-5 shadow-sm space-y-4"
         style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
       >
@@ -236,7 +263,7 @@ export default function TicketsDashboard() {
             filteredTickets.map((ticket) => {
               const lead = getLeadInfo(ticket.lead_id);
               return (
-                <div 
+                <div
                   key={ticket.id}
                   onClick={() => setSelectedTicketId(ticket.id)}
                   className="py-4 flex flex-col sm:flex-row sm:items-center justify-between rounded-xl px-3 -mx-3 cursor-pointer transition-colors group gap-4 hover:bg-[#08BD7E]/5"
@@ -246,13 +273,13 @@ export default function TicketsDashboard() {
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getPriorityColor(ticket.priority_level)}`}>
                         {ticket.priority_level} ({ticket.priority_score})
                       </span>
-                      <span 
+                      <span
                         className="text-[10px] px-2 py-0.5 rounded-full font-semibold border"
                         style={{ backgroundColor: 'var(--bg-panel)', color: 'var(--text-muted)', borderColor: 'var(--border-base)' }}
                       >
                         {ticket.ticket_type}
                       </span>
-                      <span 
+                      <span
                         className="text-[10px] px-2 py-0.5 rounded-full font-semibold border text-[#08BD7E] bg-[#08BD7E]/10 border-[#08BD7E]/20"
                       >
                         {ticket.stage}
@@ -262,18 +289,42 @@ export default function TicketsDashboard() {
                       {ticket.title}
                     </h4>
                     <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
-                      Parent: <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{lead?.parent_name || 'N/A'}</span> • 
+                      Parent: <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{lead?.parent_name || 'N/A'}</span> •
                       Student: <span className="font-medium" style={{ color: 'var(--text-primary)' }}> {lead?.student_name || 'N/A'}</span>
                     </p>
                   </div>
 
                   <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {/* Quick Actions */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        updateTicket(ticket.id, { is_recurring: !ticket.is_recurring });
+                      }}
+                      className={`p-1.5 rounded-full transition-colors ${ticket.is_recurring ? 'text-amber-500 bg-amber-50' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                      title={ticket.is_recurring ? "Recurring Ticket" : "Mark as Recurring"}
+                    >
+                      <Star size={18} fill={ticket.is_recurring ? "currentColor" : "none"} />
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newStage = ticket.stage === 'Resolved' ? 'Pending' : 'Resolved';
+                        updateTicket(ticket.id, { stage: newStage });
+                      }}
+                      className={`p-1.5 rounded-full transition-colors flex items-center gap-1 font-medium ${ticket.stage === 'Resolved' ? 'text-green-600 bg-green-50 hover:bg-green-100' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'}`}
+                    >
+                      {ticket.stage === 'Resolved' ? <CheckCircle size={18} /> : <Circle size={18} />}
+                      <span className="hidden sm:inline">{ticket.stage === 'Resolved' ? 'Resolved' : 'Resolve'}</span>
+                    </button>
+
                     <div className="flex items-center gap-1.5">
                       <Clock size={14} />
                       <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-1.5 w-24">
-                      <div 
+                      <div
                         className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
                         style={{ backgroundColor: 'var(--bg-panel)', color: 'var(--text-primary)', border: '1px solid var(--border-base)' }}
                       >
@@ -291,7 +342,7 @@ export default function TicketsDashboard() {
               No tickets found matching the current filters.
             </div>
           )}
-          
+
           {hasMore && (
             <div className="py-4 flex justify-center">
               <button

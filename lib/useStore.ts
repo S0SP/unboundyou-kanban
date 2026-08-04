@@ -49,13 +49,16 @@ export interface Ticket {
     | 'Payment Pending' 
     | 'Converted' 
     | 'Closed' 
-    | 'Dropped';
+    | 'Dropped'
+    | 'Pending'
+    | 'Resolved';
   priority_level: 'Critical' | 'High' | 'Medium' | 'Low';
   priority_score: number;
   due_date: string;
   session_date?: string;
   reminder_at?: string;
   assigned_to: string;
+  is_recurring?: boolean;
   created_at: string;
   updated_at: string;
 }

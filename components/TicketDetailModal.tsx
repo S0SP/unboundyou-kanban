@@ -134,61 +134,7 @@ export default function TicketDetailModal() {
               </p>
             </div>
 
-            {/* Auto Task Checklist */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Checklist / Tasks</h4>
-              
-              {/* Add Task Form */}
-              <form onSubmit={handleAddTask} className="flex gap-2">
-                <input 
-                  type="text" 
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                  placeholder="Add custom task item..." 
-                  className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-gray-50/50"
-                />
-                <button 
-                  type="submit"
-                  className="p-2 bg-primary text-white hover:bg-primary/95 rounded-xl transition-all shadow-sm"
-                >
-                  <Plus size={16} />
-                </button>
-              </form>
 
-              {/* Tasks List */}
-              <div className="space-y-2 max-h-52 overflow-y-auto">
-                {ticketTasks.length > 0 ? (
-                  ticketTasks.map((task) => (
-                    <div 
-                      key={task.id}
-                      className="flex items-center justify-between p-3 border border-gray-50 bg-gray-50/20 rounded-xl hover:border-gray-200/60 transition-all group"
-                    >
-                      <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0 pr-4 select-none">
-                        <input 
-                          type="checkbox"
-                          checked={task.completed}
-                          onChange={() => toggleTask(task.id)}
-                          className="w-4 h-4 rounded text-primary focus:ring-primary border-gray-300"
-                        />
-                        <span className={`text-sm ${task.completed ? 'line-through text-gray-400' : 'text-gray-700 font-medium'} truncate`}>
-                          {task.title}
-                        </span>
-                      </label>
-                      <button 
-                        onClick={() => deleteTask(task.id)}
-                        className="p-1 rounded text-gray-300 hover:text-red-500 hover:bg-red-50 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-gray-400 text-center py-4 bg-gray-50/20 border border-dashed border-gray-100 rounded-xl">
-                    No checklists. Tasks generate automatically when stage updates.
-                  </p>
-                )}
-              </div>
-            </div>
 
             {/* Note Entry & Lead Notes */}
             <div className="space-y-4 pt-2">
@@ -299,22 +245,14 @@ export default function TicketDetailModal() {
 
               {/* Stage Select */}
               <div className="space-y-1.5">
-                <label className="text-xs text-gray-500 font-semibold">Pipeline Stage</label>
+                <label className="text-xs text-gray-500 font-semibold">Status</label>
                 <CustomSelect 
                   value={ticket.stage}
                   onChange={(val) => updateTicket(ticket.id, { stage: val as Ticket['stage'] })}
                   className="rounded-xl px-3 bg-white"
                   options={[
-                    { label: "New Leads", value: "New Leads" },
-                    { label: "Contacted", value: "Contacted" },
-                    { label: "Session Scheduled", value: "Session Scheduled" },
-                    { label: "Session Completed", value: "Session Completed" },
-                    { label: "Follow Up", value: "Follow Up" },
-                    { label: "Interested", value: "Interested" },
-                    { label: "Payment Pending", value: "Payment Pending" },
-                    { label: "Converted", value: "Converted" },
-                    { label: "Closed", value: "Closed" },
-                    { label: "Dropped", value: "Dropped" }
+                    { label: "Pending", value: "Pending" },
+                    { label: "Resolved", value: "Resolved" }
                   ]}
                 />
               </div>
