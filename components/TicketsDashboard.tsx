@@ -34,7 +34,7 @@ export default function TicketsDashboard({
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [localStageFilter, setLocalStageFilter] = useState<string>('All Stages');
   const [dateFilter, setDateFilter] = useState<string>('');
-  const [chartData, setChartData] = useState({ pending: 0, resolved: 0, progress: 0 });
+  const [chartData, setChartData] = useState({ pending: 0, resolved: 0 });
 
   const stageFilter = propStageFilter !== undefined ? propStageFilter : localStageFilter;
   const setStageFilter = propSetStageFilter !== undefined ? propSetStageFilter : setLocalStageFilter;
@@ -168,19 +168,16 @@ export default function TicketsDashboard({
         if (data) {
           let pending = 0;
           let resolved = 0;
-          let progress = 0;
 
           data.forEach((t: any) => {
             if (t.stage === 'Resolved') {
               resolved++;
             } else if (t.stage === 'Pending') {
               pending++;
-            } else {
-              progress++;
             }
           });
 
-          setChartData({ pending, resolved, progress });
+          setChartData({ pending, resolved });
         }
       } catch (err) {
         console.error('Error fetching chart data:', err);
@@ -345,19 +342,17 @@ export default function TicketsDashboard({
 
           {/* SVG Donut Chart */}
           <div className="flex items-center justify-around gap-4 py-2 flex-1">
-            {chartData.pending + chartData.resolved + chartData.progress > 0 ? (
+            {chartData.pending + chartData.resolved > 0 ? (
               <>
                 <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
                   {(() => {
                     const pending = chartData.pending;
                     const resolved = chartData.resolved;
-                    const progress = chartData.progress;
-                    const total = pending + resolved + progress;
+                    const total = pending + resolved;
                     
                     const r = 15.91549430918954;
                     const resolvedStroke = (resolved / total) * 100;
                     const pendingStroke = (pending / total) * 100;
-                    const progressStroke = (progress / total) * 100;
                     
                     return (
                       <>
@@ -386,18 +381,6 @@ export default function TicketsDashboard({
                             strokeDashoffset={-resolvedStroke}
                             className="transition-all duration-500 ease-out"
                           />
-                          {/* Progress (Blue) */}
-                          <circle
-                            cx="21"
-                            cy="21"
-                            r={r}
-                            fill="transparent"
-                            stroke="#3b82f6"
-                            strokeWidth="5"
-                            strokeDasharray={`${progressStroke} ${100 - progressStroke}`}
-                            strokeDashoffset={-(resolvedStroke + pendingStroke)}
-                            className="transition-all duration-500 ease-out"
-                          />
                         </svg>
                         <div className="absolute text-center">
                           <span className="text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>{total}</span>
@@ -418,11 +401,6 @@ export default function TicketsDashboard({
                     <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] shrink-0" />
                     <span style={{ color: 'var(--text-muted)' }} className="truncate">Pending:</span>
                     <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{chartData.pending}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] shrink-0" />
-                    <span style={{ color: 'var(--text-muted)' }} className="truncate">In Progress:</span>
-                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{chartData.progress}</span>
                   </div>
                 </div>
               </>

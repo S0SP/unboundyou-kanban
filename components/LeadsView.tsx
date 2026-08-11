@@ -115,8 +115,8 @@ export default function LeadsView() {
                     {/* Parent & Student */}
                     <td className="py-4 px-6">
                       <div className="space-y-0.5">
-                        <p className="font-bold text-gray-900">{lead.parent_name}</p>
-                        <p className="text-xs text-gray-400 font-medium">Student: {lead.student_name}</p>
+                        <p className="font-bold text-gray-900">{lead.student_name}</p>
+                        <p className="text-xs text-gray-400 font-medium">Parent: {lead.parent_name}</p>
                       </div>
                     </td>
                     
