@@ -33,6 +33,8 @@ export default function TicketsDashboard({
 
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [localStageFilter, setLocalStageFilter] = useState<string>('All Stages');
+  const [dateFilter, setDateFilter] = useState<string>('');
+  const [chartData, setChartData] = useState({ pending: 0, resolved: 0, progress: 0 });
 
   const stageFilter = propStageFilter !== undefined ? propStageFilter : localStageFilter;
   const setStageFilter = propSetStageFilter !== undefined ? propSetStageFilter : setLocalStageFilter;
@@ -104,6 +106,11 @@ export default function TicketsDashboard({
       if (stageFilter !== 'All Stages') {
         query = query.eq('stage', stageFilter);
       }
+      if (dateFilter) {
+        const startOfDay = `${dateFilter}T00:00:00.000Z`;
+        const endOfDay = `${dateFilter}T23:59:59.999Z`;
+        query = query.gte('created_at', startOfDay).lte('created_at', endOfDay);
+      }
 
       const { data: ticketsData, error } = await query;
 
@@ -136,11 +143,52 @@ export default function TicketsDashboard({
     } finally {
       setIsLoadingList(false);
     }
-  }, [typeFilter, stageFilter, leadsCache, page]);
+  }, [typeFilter, stageFilter, dateFilter, leadsCache, page]);
 
   useEffect(() => {
     fetchTickets(false);
-  }, [typeFilter, stageFilter]);
+  }, [typeFilter, stageFilter, dateFilter, tickets]);
+
+  // Fetch day-wise status counts for selected date or today
+  useEffect(() => {
+    const fetchChartData = async () => {
+      const targetDate = dateFilter || new Date().toISOString().split('T')[0];
+      const startOfDay = `${targetDate}T00:00:00.000Z`;
+      const endOfDay = `${targetDate}T23:59:59.999Z`;
+
+      try {
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('stage')
+          .gte('created_at', startOfDay)
+          .lte('created_at', endOfDay);
+
+        if (error) throw error;
+
+        if (data) {
+          let pending = 0;
+          let resolved = 0;
+          let progress = 0;
+
+          data.forEach((t: any) => {
+            if (t.stage === 'Resolved') {
+              resolved++;
+            } else if (t.stage === 'Pending') {
+              pending++;
+            } else {
+              progress++;
+            }
+          });
+
+          setChartData({ pending, resolved, progress });
+        }
+      } catch (err) {
+        console.error('Error fetching chart data:', err);
+      }
+    };
+
+    fetchChartData();
+  }, [dateFilter, tickets]);
 
   // Keep local filteredTickets in sync with global store updates
   useEffect(() => {
@@ -209,55 +257,194 @@ export default function TicketsDashboard({
         </div>
       </div>
 
-      {/* 2. Advanced Filtering */}
-      <div
-        className="p-5 rounded-2xl shadow-sm border flex flex-col md:flex-row gap-4 items-center justify-between"
-        style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
-      >
-        <div className="flex items-center gap-2">
-          <Filter size={18} style={{ color: 'var(--text-muted)' }} />
-          <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Advanced Filters</h3>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-          <div className="w-full sm:w-48">
-            <CustomSelect
-              value={typeFilter}
-              onChange={(val) => setTypeFilter(val)}
-              options={[
-                { label: 'All Ticket Types', value: 'All' },
-                ...ticketTypes.map(t => ({ label: t, value: t }))
-              ]}
-              className="bg-transparent"
-            />
+      {/* 2. Advanced Filtering & Donut Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Advanced Filters */}
+        <div
+          className="lg:col-span-2 p-5 rounded-2xl shadow-sm border flex flex-col justify-between gap-4"
+          style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Filter size={18} style={{ color: 'var(--text-muted)' }} />
+            <h3 className="font-semibold" style={{ color: 'var(--text-primary)' }}>Advanced Filters</h3>
           </div>
 
-          <div className="w-full sm:w-48">
-            <CustomSelect
-              value={stageFilter}
-              onChange={(val) => setStageFilter(val)}
-              options={[
-                { label: 'All Stages', value: 'All Stages' },
-                { label: 'Pending', value: 'Pending' },
-                { label: 'Resolved', value: 'Resolved' }
-              ]}
-              className="bg-transparent"
-            />
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
+            <div className="flex-1">
+              <CustomSelect
+                value={typeFilter}
+                onChange={(val) => setTypeFilter(val)}
+                options={[
+                  { label: 'All Ticket Types', value: 'All' },
+                  ...ticketTypes.map(t => ({ label: t, value: t }))
+                ]}
+                className="bg-transparent"
+              />
+            </div>
+
+            <div className="flex-1">
+              <CustomSelect
+                value={stageFilter}
+                onChange={(val) => setStageFilter(val)}
+                options={[
+                  { label: 'All Stages', value: 'All Stages' },
+                  { label: 'Pending', value: 'Pending' },
+                  { label: 'Resolved', value: 'Resolved' }
+                ]}
+                className="bg-transparent"
+              />
+            </div>
+
+            <div className="flex-1">
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="w-full text-sm border rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                style={{
+                  borderColor: 'var(--border-base)',
+                  backgroundColor: 'var(--bg-input)',
+                  color: 'var(--text-primary)'
+                }}
+                title="Filter by Ticket Creation Date"
+              />
+            </div>
           </div>
 
-          {(typeFilter !== 'All' || stageFilter !== 'All Stages') && (
-            <button
-              onClick={() => {
-                setTypeFilter('All');
-                setStageFilter('All Stages');
-              }}
-              className="text-xs font-semibold hover:text-red-500 transition-colors whitespace-nowrap px-3"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              Clear Filters
-            </button>
+          {(typeFilter !== 'All' || stageFilter !== 'All Stages' || dateFilter !== '') && (
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  setTypeFilter('All');
+                  setStageFilter('All Stages');
+                  setDateFilter('');
+                }}
+                className="text-xs font-semibold hover:text-red-500 transition-colors whitespace-nowrap px-3 py-1.5 rounded-lg border border-red-100/50 bg-red-50/10"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Clear Filters
+              </button>
+            </div>
           )}
         </div>
+
+        {/* Donut Chart Card */}
+        <div
+          className="p-5 rounded-2xl shadow-sm border flex flex-col justify-between"
+          style={{ backgroundColor: 'var(--bg-panel)', borderColor: 'var(--border-base)' }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold text-sm" style={{ color: 'var(--text-primary)' }}>
+              Ticket Status Breakdown
+            </h3>
+            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#08BD7E]/10 text-[#08BD7E]">
+              {dateFilter ? new Date(dateFilter).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Today'}
+            </span>
+          </div>
+
+          {/* SVG Donut Chart */}
+          <div className="flex items-center justify-around gap-4 py-2 flex-1">
+            {chartData.pending + chartData.resolved + chartData.progress > 0 ? (
+              <>
+                <div className="relative w-28 h-28 flex items-center justify-center shrink-0">
+                  {(() => {
+                    const pending = chartData.pending;
+                    const resolved = chartData.resolved;
+                    const progress = chartData.progress;
+                    const total = pending + resolved + progress;
+                    
+                    const r = 15.91549430918954;
+                    const resolvedStroke = (resolved / total) * 100;
+                    const pendingStroke = (pending / total) * 100;
+                    const progressStroke = (progress / total) * 100;
+                    
+                    return (
+                      <>
+                        <svg viewBox="0 0 42 42" className="w-full h-full transform -rotate-90">
+                          {/* Resolved (Green) */}
+                          <circle
+                            cx="21"
+                            cy="21"
+                            r={r}
+                            fill="transparent"
+                            stroke="#08BD7E"
+                            strokeWidth="5"
+                            strokeDasharray={`${resolvedStroke} ${100 - resolvedStroke}`}
+                            strokeDashoffset="0"
+                            className="transition-all duration-500 ease-out"
+                          />
+                          {/* Pending (Orange) */}
+                          <circle
+                            cx="21"
+                            cy="21"
+                            r={r}
+                            fill="transparent"
+                            stroke="#f97316"
+                            strokeWidth="5"
+                            strokeDasharray={`${pendingStroke} ${100 - pendingStroke}`}
+                            strokeDashoffset={-resolvedStroke}
+                            className="transition-all duration-500 ease-out"
+                          />
+                          {/* Progress (Blue) */}
+                          <circle
+                            cx="21"
+                            cy="21"
+                            r={r}
+                            fill="transparent"
+                            stroke="#3b82f6"
+                            strokeWidth="5"
+                            strokeDasharray={`${progressStroke} ${100 - progressStroke}`}
+                            strokeDashoffset={-(resolvedStroke + pendingStroke)}
+                            className="transition-all duration-500 ease-out"
+                          />
+                        </svg>
+                        <div className="absolute text-center">
+                          <span className="text-xl font-extrabold" style={{ color: 'var(--text-primary)' }}>{total}</span>
+                          <p className="text-[8px] uppercase tracking-wider font-semibold" style={{ color: 'var(--text-muted)' }}>Tickets</p>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#08BD7E] shrink-0" />
+                    <span style={{ color: 'var(--text-muted)' }} className="truncate">Resolved:</span>
+                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{chartData.resolved}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] shrink-0" />
+                    <span style={{ color: 'var(--text-muted)' }} className="truncate">Pending:</span>
+                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{chartData.pending}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#3b82f6] shrink-0" />
+                    <span style={{ color: 'var(--text-muted)' }} className="truncate">In Progress:</span>
+                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{chartData.progress}</span>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-4 text-center w-full">
+                <svg viewBox="0 0 42 42" className="w-20 h-20 transform -rotate-90 text-gray-200 dark:text-gray-800">
+                  <circle
+                    cx="21"
+                    cy="21"
+                    r="15.91549430918954"
+                    fill="transparent"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeDasharray="4 2"
+                  />
+                </svg>
+                <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>No tickets for this day</p>
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* 3. Summarized List View */}
@@ -340,7 +527,7 @@ export default function TicketsDashboard({
 
                     <div className="flex items-center gap-1.5">
                       <Clock size={14} />
-                      <span>{new Date(ticket.created_at).toLocaleDateString()}</span>
+                      <span>{new Date(ticket.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
                     </div>
                     <div className="flex items-center gap-1.5 w-24">
                       <div

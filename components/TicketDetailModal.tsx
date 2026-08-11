@@ -165,7 +165,7 @@ export default function TicketDetailModal() {
                   <div key={note.id} className="p-3 bg-gray-50/30 border border-gray-100 rounded-xl text-xs">
                     <div className="flex justify-between items-center text-gray-400 mb-1 font-medium">
                       <span>{getUserName(note.created_by)}</span>
-                      <span>{new Date(note.created_at).toLocaleDateString()}</span>
+                      <span>{new Date(note.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
                     </div>
                     <p className="text-gray-700 leading-normal">{note.content}</p>
                   </div>
@@ -183,7 +183,7 @@ export default function TicketDetailModal() {
                     <p>
                       <span className="font-semibold text-gray-700">{getUserName(act.created_by)}</span> {act.message} • 
                       <span className="text-[10px] text-gray-400 ml-1">
-                        {new Date(act.created_at).toLocaleDateString()}
+                        {new Date(act.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </p>
                   </div>
@@ -230,10 +230,6 @@ export default function TicketDetailModal() {
                   <div className="space-y-1 flex items-center gap-2">
                     <Mail size={12} className="text-gray-400" />
                     <span className="text-gray-600 font-medium truncate">{lead.email || 'No email'}</span>
-                  </div>
-                  <div className="space-y-1 pt-1 border-t border-gray-50 flex items-center justify-between">
-                    <span className="text-gray-400">Estimated Value</span>
-                    <span className="font-bold text-primary">₹{lead.estimated_value.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>
@@ -304,6 +300,14 @@ export default function TicketDetailModal() {
                   }}
                   className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
                 />
+              </div>
+
+              {/* Ticket Created At */}
+              <div className="space-y-1 bg-gray-50 border border-gray-100 p-3 rounded-xl">
+                <label className="text-xs text-gray-500 font-semibold block">Ticket Created At</label>
+                <span className="text-xs text-gray-700 font-medium">
+                  {new Date(ticket.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                </span>
               </div>
 
               {/* Reminder Section */}

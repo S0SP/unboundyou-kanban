@@ -57,7 +57,7 @@ export default function RulesBuilder() {
   const getFieldLabel = (field: string) => {
     switch (field) {
       case 'estimated_value': return 'Estimated Lead Value';
-      case 'stage': return 'Kanban Stage';
+      case 'stage': return 'Ticket Stage';
       case 'ticket_type': return 'Ticket Type';
       case 'days_since_last_contact': return 'Days Since Last Contact';
       case 'days_to_session': return 'Days Until Session';
@@ -179,7 +179,7 @@ export default function RulesBuilder() {
                   className="rounded-xl px-3 bg-white"
                   options={[
                     { label: "Estimated Value (₹)", value: "estimated_value" },
-                    { label: "Kanban Stage", value: "stage" },
+                    { label: "Ticket Stage", value: "stage" },
                     { label: "Ticket Type", value: "ticket_type" },
                     { label: "Days Since Last Contact", value: "days_since_last_contact" },
                     { label: "Days Until Session", value: "days_to_session" }

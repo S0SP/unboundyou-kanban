@@ -6,7 +6,6 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import Dashboard from '@/components/Dashboard';
 import TicketsDashboard from '@/components/TicketsDashboard';
-import KanbanBoard from '@/components/KanbanBoard';
 import LeadsView from '@/components/LeadsView';
 import RulesBuilder from '@/components/RulesBuilder';
 import TicketDetailModal from '@/components/TicketDetailModal';
@@ -64,10 +63,6 @@ export default function Home() {
         return <Dashboard />;
       case 'tickets-dashboard':
         return <TicketsDashboard />;
-      case 'leads-kanban':
-        return <KanbanBoard boardType="leads" />;
-      case 'tickets-kanban':
-        return <KanbanBoard boardType="tickets" />;
       case 'leads':
         return <LeadsView />;
       case 'rules':

@@ -28,18 +28,11 @@ export function CommandPalette() {
 
   const handleSelectTicket = (ticketId: string) => {
     setIsSearchOpen(false);
-    const ticket = tickets.find(t => t.id === ticketId);
-    if (ticket) {
-      if (ticket.ticket_type === 'Lead' || ticket.ticket_type === 'Admission Inquiry') {
-        setActiveTab('leads-kanban');
-      } else {
-        setActiveTab('tickets-kanban');
-      }
-    }
+    setActiveTab('tickets-dashboard');
     setSelectedTicketId(ticketId);
   };
 
-  const handleSelectPage = (page: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules') => {
+  const handleSelectPage = (page: 'dashboard' | 'tickets-dashboard' | 'leads' | 'rules') => {
     setIsSearchOpen(false);
     setActiveTab(page);
   };
@@ -79,18 +72,7 @@ export function CommandPalette() {
                 >
                   <Ticket size={16} /> Go to Tickets Analytics
                 </Command.Item>
-                <Command.Item 
-                  onSelect={() => handleSelectPage('leads-kanban')}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors data-[selected=true]:bg-slate-50 data-[selected=true]:text-indigo-600 outline-none"
-                >
-                  <Ticket size={16} /> Go to Leads Kanban
-                </Command.Item>
-                <Command.Item 
-                  onSelect={() => handleSelectPage('tickets-kanban')}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors data-[selected=true]:bg-slate-50 data-[selected=true]:text-indigo-600 outline-none"
-                >
-                  <Ticket size={16} /> Go to Tickets Kanban
-                </Command.Item>
+
                 <Command.Item 
                   onSelect={() => handleSelectPage('rules')}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-sm text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors data-[selected=true]:bg-slate-50 data-[selected=true]:text-indigo-600 outline-none"

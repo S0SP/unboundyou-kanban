@@ -108,7 +108,7 @@ interface AppState {
   ticketsPage: number;
 
   // UI State
-  activeTab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules';
+  activeTab: 'dashboard' | 'tickets-dashboard' | 'leads' | 'rules';
   selectedTicketId: string | null;
   isCreateLeadOpen: boolean;
   isCreateTicketOpen: boolean;
@@ -125,7 +125,7 @@ interface AppState {
   fetchData: () => Promise<void>;
   loadMoreLeads: () => Promise<void>;
   loadMoreTickets: () => Promise<void>;
-  setActiveTab: (tab: 'dashboard' | 'tickets-dashboard' | 'leads-kanban' | 'tickets-kanban' | 'leads' | 'rules') => void;
+  setActiveTab: (tab: 'dashboard' | 'tickets-dashboard' | 'leads' | 'rules') => void;
   setSelectedTicketId: (id: string | null) => void;
   setCreateLeadOpen: (open: boolean) => void;
   setCreateTicketOpen: (open: boolean) => void;

@@ -102,14 +102,6 @@ export default function Dashboard() {
 
   const stats = [
     { 
-      label: "Today's Sessions", 
-      value: String(todaySessionsCount), 
-      icon: Calendar, 
-      color: 'text-[#08BD7E] bg-[#08BD7E]/10',
-      onClick: undefined,
-      active: false
-    },
-    { 
       label: 'Pending Tickets', 
       value: String(pendingTicketsCount), 
       icon: TicketIcon, 
@@ -130,18 +122,14 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* 1. Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat, i) => {
           const Icon = stat.icon;
           return (
             <div
               key={i}
               onClick={stat.onClick}
-              className={`border p-5 rounded-2xl flex items-center justify-between shadow-sm transition-all ${
-                stat.onClick 
-                  ? 'cursor-pointer hover:shadow-md select-none' 
-                  : ''
-              } ${
+              className={`border p-5 rounded-2xl flex items-center justify-between shadow-sm transition-all cursor-pointer hover:shadow-md select-none ${
                 stat.active 
                   ? 'scale-[1.01]' 
                   : ''

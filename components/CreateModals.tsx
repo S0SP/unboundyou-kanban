@@ -17,6 +17,7 @@ export default function CreateModals() {
     isCreateTicketOpen, 
     setCreateTicketOpen, 
     ticketTypes,
+    addTicketType,
     preselectedLeadId,
     setPreselectedLeadId,
     preselectedTicketStage,
@@ -100,15 +101,24 @@ export default function CreateModals() {
   };
 
   // Handle Ticket Submit
-  const handleTicketSubmit = (e: React.FormEvent) => {
+  const handleTicketSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ticketTitle.trim() || !selectedLeadId) return;
+    const trimmedDescription = ticketDescription.trim();
+    const trimmedTitle = ticketTitle.trim();
+    const trimmedType = ticketType.trim();
 
-    addTicket({
+    if (!trimmedTitle || !trimmedDescription || !selectedLeadId) return;
+
+    // Save custom type to db if it's new
+    if (trimmedType && !ticketTypes.includes(trimmedType)) {
+      await addTicketType(trimmedType);
+    }
+
+    await addTicket({
       lead_id: selectedLeadId,
-      title: ticketTitle.trim(),
-      description: ticketDescription.trim(),
-      ticket_type: ticketType,
+      title: trimmedTitle,
+      description: trimmedDescription,
+      ticket_type: trimmedType || 'Scheduling',
       stage: ticketStage,
       due_date: dueDate ? new Date(dueDate).toISOString() : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       session_date: sessionDate ? new Date(sessionDate).toISOString() : undefined,
@@ -278,13 +288,14 @@ export default function CreateModals() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-gray-500 font-semibold">Ticket Description</label>
+                <label className="text-xs text-gray-500 font-semibold">Ticket Description *</label>
                 <textarea 
                   rows={4}
                   value={ticketDescription}
                   onChange={(e) => setTicketDescription(e.target.value)}
                   placeholder="e.g. The student missed the last 2 classes due to illness. They are available for a makeup class on Friday evening..." 
                   className="w-full text-sm border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white resize-none"
+                  required
                 />
                 <p className="text-[10px] text-gray-400 leading-tight">
                   Provide specific details to help resolve the ticket faster (e.g., reasons for the request, relevant dates, or student availability).
@@ -293,13 +304,19 @@ export default function CreateModals() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500 font-semibold">Ticket Type</label>
-                  <CustomSelect 
+                  <label className="text-xs text-gray-500 font-semibold">Ticket Type (Type or Select) *</label>
+                  <input
+                    type="text"
                     value={ticketType}
-                    onChange={(val) => setTicketType(val)}
-                    className="rounded-xl px-3 bg-white"
-                    options={ticketTypes.map(t => ({ label: t, value: t }))}
+                    onChange={(e) => setTicketType(e.target.value)}
+                    list="ticket-types-datalist"
+                    placeholder="e.g. Scheduling"
+                    className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary shadow-sm"
+                    required
                   />
+                  <datalist id="ticket-types-datalist">
+                    {ticketTypes.map(t => <option key={t} value={t} />)}
+                  </datalist>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500 font-semibold">Status</label>

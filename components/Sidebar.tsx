@@ -4,7 +4,6 @@ import React from 'react';
 import { useStore } from '@/lib/useStore';
 import {
   LayoutDashboard,
-  Kanban,
   Users,
   Settings,
   ChevronLeft,
@@ -29,7 +28,6 @@ export default function Sidebar({ isOpenMobile, setIsOpenMobile }: SidebarProps)
 
   const navItems = [
     { id: 'dashboard', label: 'Main Dashboard', icon: LayoutDashboard },
-    { id: 'leads-kanban', label: 'Leads Kanban', icon: Kanban },
     { id: 'leads', label: 'Leads & Queries', icon: Users },
     { id: 'rules', label: 'Priority Rules', icon: Settings },
   ] as const;
